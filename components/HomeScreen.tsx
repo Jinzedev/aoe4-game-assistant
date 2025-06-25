@@ -4,7 +4,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GameRecord } from './GameRecord';
 import { SearchResult } from '../types';
-import { formatTier, formatRankLevel, getRankIcon, getCountryFlag } from '../services/apiService';
+import { formatTier, formatRankLevel, getRankIcon, getCountryFlag, apiService, calculateMonthlyStats, MonthlyStats } from '../services/apiService';
 
 // 骨架屏组件
 function SkeletonLoader() {
@@ -45,6 +45,10 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScreenProps) {
+  const [monthlyStats, setMonthlyStats] = React.useState<MonthlyStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = React.useState(false);
+  const [recentGames, setRecentGames] = React.useState<any[]>([]);
+  const [isLoadingGames, setIsLoadingGames] = React.useState(false);
   // 🔍 打印绑定的玩家数据
   React.useEffect(() => {
     if (boundPlayerData) {
@@ -60,6 +64,208 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
       console.log('=== 主页状态 ===');
       console.log('未绑定玩家数据');
     }
+  }, [boundPlayerData]);
+
+  // 🔥 获取本月表现数据
+  React.useEffect(() => {
+    const fetchMonthlyStats = async () => {
+      if (!boundPlayerData) {
+        setMonthlyStats(null);
+        return;
+      }
+
+      setIsLoadingStats(true);
+      try {
+        console.log('📊 开始获取本月表现数据...');
+        
+        // 计算本月第一天
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthStartISO = monthStart.toISOString();
+        
+        console.log('📅 查询时间范围: 从', monthStartISO, '到现在');
+        
+        // 获取本月的游戏记录（所有模式）
+        const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
+          since: monthStartISO,
+          limit: 200 // 增加限制数量，因为包含所有模式
+        });
+        
+        console.log('🎮 本月游戏数量:', gamesResponse.games.length);
+        console.log('🔍 第一个游戏数据结构:', JSON.stringify(gamesResponse.games[0], null, 2));
+        
+        // 计算本月统计
+        const stats = calculateMonthlyStats(gamesResponse.games, boundPlayerData.profile_id);
+        console.log('📈 本月统计数据:', stats);
+        
+        setMonthlyStats(stats);
+      } catch (error) {
+        console.error('❌ 获取本月表现数据失败:', error);
+        // 设置默认数据，避免显示空白
+        setMonthlyStats({
+          totalGames: 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0,
+          rankChange: null,
+          teamRankChange: null
+        });
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchMonthlyStats();
+  }, [boundPlayerData]);
+
+  // 🎮 获取最近对战数据
+  React.useEffect(() => {
+    const fetchRecentGames = async () => {
+      if (!boundPlayerData) {
+        setRecentGames([]);
+        return;
+      }
+
+      setIsLoadingGames(true);
+      try {
+        console.log('🎮 开始获取最近对战数据...');
+        
+        // 获取最近的游戏记录（所有模式）
+        const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
+          limit: 20 // 获取更多游戏，因为包含了所有模式
+        });
+        
+        console.log('🎮 最近游戏数量:', gamesResponse.games.length);
+        
+        // 转换为UI需要的格式
+        const formattedGames = gamesResponse.games
+          .filter(game => game.teams && game.teams.length > 0)
+          .slice(0, 5) // 只显示前5场
+          .map(game => {
+            // 找到玩家所在的团队和对手团队
+            let playerData = null;
+            let playerTeam = null;
+            let opponentTeam = null;
+            let opponentData = null;
+            
+            // 遍历所有团队找到玩家
+            for (let teamIndex = 0; teamIndex < game.teams.length; teamIndex++) {
+              const team = game.teams[teamIndex];
+              if (Array.isArray(team)) {
+                for (const playerWrapper of team) {
+                  if (playerWrapper.player.profile_id === boundPlayerData.profile_id) {
+                    playerData = playerWrapper.player;
+                    playerTeam = team;
+                    // 找到对手团队（另一个团队）
+                    opponentTeam = game.teams[1 - teamIndex];
+                    break;
+                  }
+                }
+                if (playerData) break;
+              }
+            }
+            
+            // 获取对手信息（团队战中取第一个对手，1v1中就是唯一的对手）
+            if (opponentTeam && Array.isArray(opponentTeam) && opponentTeam.length > 0) {
+              opponentData = opponentTeam[0].player;
+            }
+            
+            if (!playerData || !opponentData) return null;
+            
+            const isWin = playerData.result === 'win';
+            const eloChange = playerData.rating_diff || 0;
+            
+            // 计算游戏时长
+            const duration = game.duration ? `${Math.floor(game.duration / 60)}分钟` : '--';
+            
+            // 计算时间差
+            const gameDate = new Date(game.started_at);
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - gameDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const timeAgo = diffDays === 1 ? '1天前' : `${diffDays}天前`;
+            
+            // 判断是否为无效对局 - 修改判断逻辑，不仅仅依赖ELO变化
+            const isInvalidGame = (
+              (game.duration && game.duration < 300) || // 少于5分钟
+              playerData.result === null // 结果为空
+              // 移除ELO变化的判断，因为定位赛和某些团队战可能ELO为0但仍是有效对局
+            );
+            
+            // 格式化游戏模式
+            let gameMode = 'RM 1v1';
+            if (game.kind) {
+              if (game.kind.includes('1v1')) gameMode = 'RM 1v1';
+              else if (game.kind.includes('2v2')) gameMode = 'RM 2v2';
+              else if (game.kind.includes('3v3')) gameMode = 'RM 3v3';
+              else if (game.kind.includes('4v4')) gameMode = 'RM 4v4';
+            } else {
+              // 如果没有kind字段，根据团队大小推断
+              const teamSize = playerTeam ? playerTeam.length : 1;
+              if (teamSize === 1) gameMode = 'RM 1v1';
+              else if (teamSize === 2) gameMode = 'RM 2v2';
+              else if (teamSize === 3) gameMode = 'RM 3v3';
+              else if (teamSize === 4) gameMode = 'RM 4v4';
+            }
+            
+            // 如果是无效对局，添加(Invalid)标记
+            if (isInvalidGame) {
+              gameMode += ' (Invalid)';
+            }
+            
+            // 构建玩家列表（包括自己和队友）
+            const allPlayers = playerTeam ? 
+              playerTeam.map(p => ({
+                name: p.player.name,
+                rating: p.player.rating || 0,
+                civilization: p.player.civilization
+              })) : [{ name: playerData.name, rating: playerData.rating || 0, civilization: playerData.civilization }];
+            
+            // 构建对手列表
+            const allOpponents = opponentTeam ? 
+              opponentTeam.map(p => ({
+                name: p.player.name,
+                rating: p.player.rating || 0,
+                civilization: p.player.civilization
+              })) : [{ name: opponentData.name, rating: opponentData.rating || 0, civilization: opponentData.civilization }];
+
+            // 🔍 调试输出玩家数据
+            console.log(`🎮 游戏 ${game.game_id}:`, {
+              playerData: { name: playerData.name, rating: playerData.rating },
+              opponentData: { name: opponentData.name, rating: opponentData.rating },
+              allPlayers,
+              allOpponents,
+              isInvalidGame
+            });
+
+            return {
+              gameId: game.game_id.toString(),
+              mapName: game.map,
+              gameMode,
+              duration,
+              isWin,
+              players: allPlayers,
+              opponents: allOpponents,
+              eloChange: isInvalidGame ? 0 : (eloChange || 0), // 保留原始ELO变化，包括0
+              timeAgo,
+              civilization: playerData.civilization,
+              opponentCivilization: opponentData.civilization
+            };
+          })
+          .filter(game => game !== null);
+        
+        console.log('🎮 格式化后的游戏数据:', formattedGames);
+        setRecentGames(formattedGames);
+        
+      } catch (error) {
+        console.error('❌ 获取最近对战数据失败:', error);
+        setRecentGames([]);
+      } finally {
+        setIsLoadingGames(false);
+      }
+    };
+
+    fetchRecentGames();
   }, [boundPlayerData]);
 
   // 如果没有绑定账户，显示骨架屏状态
@@ -165,16 +371,12 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
                       {boundPlayerData.leaderboards.rm_solo?.games_count || '--'}
                     </Text>
                     <Text className="text-white/60 text-xs text-center">总场次</Text>
-                    <Text className="text-emerald-400 text-xs mt-1 text-center">--</Text>
                   </View>
                   <View className="bg-white/10 rounded-2xl p-4 flex-1 ml-2">
                     <Text className="text-2xl font-bold text-white mb-1 text-center">
                       {boundPlayerData.leaderboards.rm_solo?.rating || '--'}
                     </Text>
                     <Text className="text-white/60 text-xs text-center">ELO分数</Text>
-                    <View className="flex-row items-center justify-center mt-1">
-                      <Text className="text-white/40 text-xs">--</Text>
-                    </View>
                   </View>
                 </View>
               </>
@@ -203,62 +405,83 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
             </View>
           ) : (
             <>
-              {/* 快速统计  */}
+              {/* 本月表现 */}
               <View className="bg-white/95 rounded-3xl p-6 mb-4 shadow-lg">
                 <View className="flex-row items-center justify-between mb-6">
                   <Text className="text-lg font-bold text-gray-800">本月表现</Text>
                   <View className="bg-gray-100 rounded-full px-3 py-1">
-                    <Text className="text-gray-600 text-xs font-medium">12月</Text>
+                    <Text className="text-gray-600 text-xs font-medium">
+                      {new Date().toLocaleDateString('zh-CN', { month: 'long' })}
+                    </Text>
                   </View>
                 </View>
-                <View className="flex-row ">
-                  {/* 1v1 排名卡片 */}
-                  <View className="flex-1 mr-3">
-                    <LinearGradient
-                      colors={['#e0f2fe', '#b3e5fc']}
-                      style={{ borderRadius: 15, padding: 20 }}
-                    >
-                      <View className="flex-row items-center justify-between mb-3">
-                        <Text className="text-cyan-700 font-bold text-sm">1v1 排名</Text>
-                        <View className="bg-cyan-200 rounded-full p-2">
-                          <FontAwesome5 name="trophy" size={14} color="#0891b2" />
+
+                {isLoadingStats ? (
+                  // 加载状态
+                  <View className="flex-row">
+                    {[1, 2].map((index) => (
+                      <View key={index} className="flex-1 mx-1">
+                        <View className="bg-gray-100 rounded-2xl p-5 h-32">
+                          <View className="w-8 h-8 bg-gray-200 rounded-full mb-3" />
+                          <View className="w-12 h-6 bg-gray-200 rounded mb-2" />
+                          <View className="w-16 h-3 bg-gray-200 rounded" />
                         </View>
                       </View>
-                      <Text className="text-3xl font-bold text-cyan-900 mb-2">
-                        #{boundPlayerData.leaderboards.rm_solo?.rank || '---'}
-                      </Text>
-                      <View className="flex-row items-center">
-                        <View className="bg-gray-100 rounded-full px-3 py-1">
-                          <Text className="text-gray-600 text-xs font-semibold">--</Text>
-                        </View>
-                        <Text className="text-cyan-600 text-xs ml-2">本月</Text>
-                      </View>
-                    </LinearGradient>
+                    ))}
                   </View>
-                  
-                  {/* 团队排名卡片 */}
-                  <View className="flex-1 ml-3">
-                    <LinearGradient
-                      colors={['#f3e8ff', '#e9d5ff']}
-                      style={{ borderRadius: 15, padding: 20 }}
-                    >
-                      <View className="flex-row items-center justify-between mb-3">
-                        <Text className="text-purple-700 font-bold text-sm">团队排名</Text>
-                        <View className="bg-purple-200 rounded-full p-2">
-                          <FontAwesome5 name="users" size={14} color="#7c3aed" />
+                ) : (
+                  <View className="flex-row">
+                    {/* 本月胜率卡片 */}
+                    <View className="flex-1 mr-3">
+                      <LinearGradient
+                        colors={['#e0f2fe', '#b3e5fc']}
+                        style={{ borderRadius: 15, padding: 20 }}
+                      >
+                        <View className="flex-row items-center justify-between mb-3">
+                          <Text className="text-cyan-700 font-bold text-sm">本月胜率</Text>
+                          <View className="bg-cyan-200 rounded-full p-2">
+                            <FontAwesome5 name="trophy" size={14} color="#0891b2" />
+                          </View>
                         </View>
-                      </View>
-                      <Text className="text-3xl font-bold text-purple-900 mb-2">#892</Text>
-                      <View className="flex-row items-center">
-                        <View className="bg-red-100 rounded-full px-3 py-1 flex-row items-center">
-                          <FontAwesome5 name="arrow-down" size={10} color="#dc2626" />
-                          <Text className="text-red-700 text-xs font-semibold ml-1">-5</Text>
+                        <Text className="text-3xl font-bold text-cyan-900 mb-2">
+                          {monthlyStats ? `${monthlyStats.winRate.toFixed(1)}%` : '--'}
+                        </Text>
+                        <View className="flex-row items-center">
+                          <View className="bg-cyan-100 rounded-full px-3 py-1">
+                            <Text className="text-cyan-700 text-xs font-semibold">
+                              {monthlyStats ? `${monthlyStats.wins}胜${monthlyStats.losses}负` : '暂无数据'}
+                            </Text>
+                          </View>
                         </View>
-                        <Text className="text-purple-600 text-xs ml-2">本月</Text>
-                      </View>
-                    </LinearGradient>
+                      </LinearGradient>
+                    </View>
+                    
+                    {/* 本月场次卡片 */}
+                    <View className="flex-1 ml-3">
+                      <LinearGradient
+                        colors={['#f3e8ff', '#e9d5ff']}
+                        style={{ borderRadius: 15, padding: 20 }}
+                      >
+                        <View className="flex-row items-center justify-between mb-3">
+                          <Text className="text-purple-700 font-bold text-sm">本月场次</Text>
+                          <View className="bg-purple-200 rounded-full p-2">
+                            <FontAwesome5 name="gamepad" size={14} color="#7c3aed" />
+                          </View>
+                        </View>
+                        <Text className="text-3xl font-bold text-purple-900 mb-2">
+                          {monthlyStats ? monthlyStats.totalGames : '--'}
+                        </Text>
+                        <View className="flex-row items-center">
+                          <View className="bg-purple-100 rounded-full px-3 py-1">
+                            <Text className="text-purple-700 text-xs font-semibold">
+                              {monthlyStats && monthlyStats.totalGames > 0 ? '保持活跃' : '尚未开始'}
+                            </Text>
+                          </View>
+                        </View>
+                      </LinearGradient>
+                    </View>
                   </View>
-                </View>
+                )}
               </View>
 
               {/* 最近对战 */}
@@ -272,20 +495,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
                     </TouchableOpacity>
                   </View>
                   
-                  {/* 战绩摘要 */}
-                  <View className="flex-row space-x-3 mb-4">
-                    <View className="bg-emerald-50 rounded-full px-3 py-1 flex-row items-center">
-                      <View className="w-2 h-2 bg-emerald-500 rounded-full mr-2" />
-                      <Text className="text-emerald-700 text-xs font-medium">2胜</Text>
-                    </View>
-                    <View className="bg-red-50 rounded-full px-3 py-1 flex-row items-center">
-                      <View className="w-2 h-2 bg-red-500 rounded-full mr-2" />
-                      <Text className="text-red-700 text-xs font-medium">1负</Text>
-                    </View>
-                    <View className="bg-gray-50 rounded-full px-3 py-1">
-                      <Text className="text-gray-600 text-xs font-medium">胜率 66.7%</Text>
-                    </View>
-                  </View>
+
                   
                   {/* 筛选标签 */}
                   <View className="flex-row space-x-2">
@@ -306,62 +516,48 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
                 
                 {/* 游戏记录 */}
                 <View>
-                  <GameRecord
-                    mapName="Dry Arabia"
-                    mapIcon="map"
-                    gameMode="RM 1v1"
-                    duration="15分钟"
-                    isWin={true}
-                    playerName="梦想胖到180"
-                    playerElo={760}
-                    playerIcon="crown"
-                    opponentName="SF Brady"
-                    opponentElo={763}
-                    opponentIcon="chess-rook"
-                    eloChange={22}
-                    timeAgo="8天前"
-                    mapIconColor="#16a34a"
-                    playerIconColor="#eab308"
-                    opponentIconColor="#16a34a"
-                  />
-                  
-                  <GameRecord
-                    mapName="Four Lakes"
-                    mapIcon="map"
-                    gameMode="RM 1v1"
-                    duration="18分钟"
-                    isWin={false}
-                    playerName="梦想胖到180"
-                    playerElo={760}
-                    playerIcon="crown"
-                    opponentName="TheViper"
-                    opponentElo={1678}
-                    opponentIcon="trophy"
-                    eloChange={-18}
-                    timeAgo="5天前"
-                    mapIconColor="#0ea5e9"
-                    playerIconColor="#eab308"
-                    opponentIconColor="#dc2626"
-                  />
-                  
-                  <GameRecord
-                    mapName="Ancient Spires"
-                    mapIcon="mountain"
-                    gameMode="RM 1v1"
-                    duration="31分钟"
-                    isWin={true}
-                    playerName="梦想胖到180"
-                    playerElo={760}
-                    playerIcon="crown"
-                    opponentName="NoobSlayer"
-                    opponentElo={892}
-                    opponentIcon="fire"
-                    eloChange={25}
-                    timeAgo="3天前"
-                    mapIconColor="#7c3aed"
-                    playerIconColor="#eab308"
-                    opponentIconColor="#f59e0b"
-                  />
+                  {isLoadingGames ? (
+                    // 加载状态
+                    <>
+                      {[1, 2, 3].map((index) => (
+                        <View key={index} className="flex-row items-center py-3 border-b border-gray-100">
+                          <View className="w-10 h-10 bg-gray-200 rounded-lg mr-3" />
+                          <View className="flex-1">
+                            <View className="w-24 h-4 bg-gray-200 rounded mb-2" />
+                            <View className="w-16 h-3 bg-gray-200 rounded" />
+                          </View>
+                          <View className="items-end">
+                            <View className="w-12 h-4 bg-gray-200 rounded mb-2" />
+                            <View className="w-8 h-3 bg-gray-200 rounded" />
+                          </View>
+                        </View>
+                      ))}
+                    </>
+                  ) : recentGames.length > 0 ? (
+                    recentGames.map((game, index) => (
+                      <GameRecord
+                        key={game.gameId}
+                        mapName={game.mapName}
+                        mapIcon="map"
+                        gameMode={game.gameMode}
+                        duration={game.duration}
+                        isWin={game.isWin}
+                        players={game.players}
+                        playerIcon="crown"
+                        opponents={game.opponents}
+                        opponentIcon={game.opponents[0]?.rating > game.players[0]?.rating ? "trophy" : "chess-rook"}
+                        eloChange={game.eloChange}
+                        timeAgo={game.timeAgo}
+                        mapIconColor={index % 3 === 0 ? "#16a34a" : index % 3 === 1 ? "#0ea5e9" : "#f59e0b"}
+                        playerIconColor="#eab308"
+                        opponentIconColor={game.opponents[0]?.rating > game.players[0]?.rating ? "#dc2626" : "#16a34a"}
+                      />
+                    ))
+                  ) : (
+                    <View className="py-8 items-center">
+                      <Text className="text-gray-500 text-sm">暂无对战记录</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </>
@@ -370,4 +566,4 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
       </LinearGradient>
     </View>
   );
-} 
+}

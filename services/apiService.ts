@@ -75,20 +75,25 @@ export interface Game {
   game_id: number;
   started_at: string;
   updated_at: string;
-  duration: number;
-  map: {
-    map_id: number;
-    name: string;
-    description?: string;
-  };
+  duration: number | null;
+  map: string; // 简单字符串，不是对象
   kind: string; // "rm_1v1", "rm_2v2", etc.
   leaderboard: string; // "rm_solo", "rm_team", etc.
+  mmr_leaderboard?: string;
   season: number;
   server: string;
+  patch: number;
   average_rating: number;
+  average_rating_deviation?: number | null;
+  average_mmr?: number | null;
+  average_mmr_deviation?: number | null;
   ongoing: boolean;
   just_finished: boolean;
-  teams: Team[];
+  teams: PlayerWrapper[][]; // 二维数组结构
+}
+
+export interface PlayerWrapper {
+  player: GamePlayer;
 }
 
 export interface Team {
@@ -101,15 +106,14 @@ export interface GamePlayer {
   profile_id: number;
   name: string;
   country?: string;
-  elo: number;
-  elo_rating: number;
-  elo_change?: number;
-  civilization: {
-    item_id: number;
-    name: string;
-    abbreviation: string;
-  };
-  result: 'win' | 'loss';
+  result: 'win' | 'loss' | null;
+  civilization: string; // 简化为字符串
+  civilization_randomized?: boolean;
+  rating: number | null;
+  rating_diff: number | null;
+  mmr: number | null;
+  mmr_diff: number | null;
+  input_type?: string;
 }
 
 export interface LeaderboardParams {
@@ -150,6 +154,15 @@ export interface CivilizationStats {
   wins: number;
   win_rate: number;
   play_rate: number;
+}
+
+export interface MonthlyStats {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  rankChange: number | null;
+  teamRankChange: number | null;
 }
 
 // API 服务类
@@ -474,6 +487,87 @@ export const getCivilizationColor = (abbreviation: string): string => {
     'MON': '#4338ca', // 蒙古 - 靛青色
   };
   return colorMap[abbreviation] || '#6b7280';
+};
+
+// 计算本月统计数据
+export const calculateMonthlyStats = (games: Game[], playerId?: number): MonthlyStats => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  
+  // 本月第一天
+  const monthStart = new Date(currentYear, currentMonth, 1);
+  
+  // 筛选本月的游戏
+  const monthlyGames = games.filter(game => {
+    const gameDate = new Date(game.started_at);
+    return gameDate >= monthStart;
+  });
+  
+  console.log(`📊 本月统计: 总共${games.length}场游戏，本月${monthlyGames.length}场`);
+  
+  if (monthlyGames.length === 0) {
+    return {
+      totalGames: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      rankChange: null,
+      teamRankChange: null
+    };
+  }
+  
+  // 计算胜负
+  let wins = 0;
+  let losses = 0;
+  let validGames = 0; // 有效游戏计数
+  
+  monthlyGames.forEach((game, index) => {
+    // 验证游戏数据结构
+    if (!game.teams || !Array.isArray(game.teams)) {
+      return;
+    }
+    
+    // 找到玩家所在的队伍（修正数据结构）
+    let playerResult: string | null = null;
+    
+    // API返回的teams是二维数组，每个team是一个数组，包含玩家对象
+    for (const team of game.teams) {
+      if (Array.isArray(team)) {
+        for (const playerWrapper of team) {
+          if (playerWrapper.player && playerWrapper.player.profile_id === playerId) {
+            playerResult = playerWrapper.player.result;
+            break;
+          }
+        }
+      }
+      if (playerResult) break;
+    }
+    
+    // 统计有效的游戏结果
+    if (playerResult === 'win') {
+      wins++;
+      validGames++;
+    } else if (playerResult === 'loss') {
+      losses++;
+      validGames++;
+    }
+    // 忽略result为null的游戏（通常是正在进行或异常的游戏）
+  });
+  
+  const totalGames = validGames; // 使用有效游戏数量
+  const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
+  
+  console.log(`📊 本月结果: ${wins}胜${losses}负，总计${totalGames}场有效游戏，胜率${winRate.toFixed(1)}%`);
+  
+  return {
+    totalGames,
+    wins,
+    losses,
+    winRate,
+    rankChange: null, // 需要更复杂的逻辑来计算排名变化
+    teamRankChange: null
+  };
 };
 
 // 获取国旗emoji
