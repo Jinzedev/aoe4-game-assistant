@@ -3,7 +3,8 @@ import { SearchResult } from '../types';
 
 const STORAGE_KEYS = {
   BOUND_PLAYER: 'bound_player_data',
-  APP_SETTINGS: 'app_settings'
+  APP_SETTINGS: 'app_settings',
+  SEARCH_HISTORY: 'search_history'
 };
 
 export class StorageService {
@@ -65,6 +66,46 @@ export class StorageService {
       console.log('✅ 所有本地数据已清除');
     } catch (error) {
       console.error('❌ 清除数据失败:', error);
+      throw error;
+    }
+  }
+
+  // 搜索历史相关方法
+  static async getSearchHistory(): Promise<SearchResult[]> {
+    try {
+      const jsonData = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
+      if (jsonData) {
+        const history = JSON.parse(jsonData) as SearchResult[];
+        return history;
+      }
+      return [];
+    } catch (error) {
+      console.error('❌ 读取搜索历史失败:', error);
+      return [];
+    }
+  }
+
+  static async addToSearchHistory(player: SearchResult): Promise<void> {
+    try {
+      const currentHistory = await this.getSearchHistory();
+      // 移除重复项
+      const filteredHistory = currentHistory.filter(p => p.profile_id !== player.profile_id);
+      // 添加到开头，限制最多10条
+      const newHistory = [player, ...filteredHistory].slice(0, 10);
+      
+      const jsonData = JSON.stringify(newHistory);
+      await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, jsonData);
+    } catch (error) {
+      console.error('❌ 添加搜索历史失败:', error);
+      throw error;
+    }
+  }
+
+  static async clearSearchHistory(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.SEARCH_HISTORY);
+    } catch (error) {
+      console.error('❌ 清除搜索历史失败:', error);
       throw error;
     }
   }

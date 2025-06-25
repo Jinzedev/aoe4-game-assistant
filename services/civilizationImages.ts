@@ -20,6 +20,11 @@ const civilizationMap: { [key: string]: CivilizationInfo } = {
     imageUrl: 'https://static.aoe4world.com/assets/flags/byzantines-cfe0492a2ed33b486946a92063989a9500ae54d9301178ee55ba6b4d4c7ceb84.png',
     color: '#800080'
   },
+  'byzantines': {
+    name: '拜占庭',
+    imageUrl: 'https://static.aoe4world.com/assets/flags/byzantines-cfe0492a2ed33b486946a92063989a9500ae54d9301178ee55ba6b4d4c7ceb84.png',
+    color: '#800080'
+  },
   'chinese': {
     name: '中国',
     imageUrl: 'https://static.aoe4world.com/assets/flags/chinese-2d4edb3d7fc7ab5e1e2df43bd644aba4d63992be5a2110ba3163a4907d0f3d4e.png',
@@ -99,7 +104,30 @@ const civilizationMap: { [key: string]: CivilizationInfo } = {
 
 export function getCivilizationInfo(civilization: string): CivilizationInfo {
   const civKey = civilization?.toLowerCase().replace(/\s+/g, '_') || '';
-  return civilizationMap[civKey] || {
+  
+  // 尝试多种可能的键名匹配
+  let result = civilizationMap[civKey];
+  
+  if (!result) {
+    // 尝试去掉复数 's'
+    const singularKey = civKey.endsWith('s') ? civKey.slice(0, -1) : civKey + 's';
+    result = civilizationMap[singularKey];
+  }
+  
+  if (!result) {
+    // 尝试一些常见的别名
+    const aliases: { [key: string]: string } = {
+      'byzant': 'byzantine',
+      'byzantium': 'byzantine',
+      'byz': 'byzantine'
+    };
+    const aliasKey = aliases[civKey];
+    if (aliasKey) {
+      result = civilizationMap[aliasKey];
+    }
+  }
+  
+  return result || {
     name: civilization || '未知文明',
     imageUrl: '',
     color: '#6b7280'

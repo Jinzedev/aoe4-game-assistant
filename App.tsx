@@ -3,6 +3,7 @@ import { View, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { StatsScreen } from './components/StatsScreen';
 import { HistoryScreen } from './components/HistoryScreen';
+import { SearchScreen } from './components/SearchScreen';
 import { RankingScreen } from './components/RankingScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
@@ -17,6 +18,7 @@ export default function App() {
   const [boundPlayerData, setBoundPlayerData] = useState<SearchResult | undefined>(undefined);
   const [showBindingPage, setShowBindingPage] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewingPlayerData, setViewingPlayerData] = useState<SearchResult | undefined>(undefined);
 
   // 应用启动时加载保存的玩家数据
   useEffect(() => {
@@ -85,6 +87,19 @@ export default function App() {
     );
   };
 
+  const handleViewPlayerHistory = (player: SearchResult) => {
+    setViewingPlayerData(player);
+    setActiveTab('history');
+  };
+
+  const handleTabPress = (tab: string) => {
+    // 当切换到非历史页面时，清除正在查看的玩家数据
+    if (tab !== 'history') {
+      setViewingPlayerData(undefined);
+    }
+    setActiveTab(tab);
+  };
+
   // 应用启动加载状态
   if (isLoading) {
     return (
@@ -113,13 +128,15 @@ export default function App() {
           <HomeScreen 
             boundPlayerData={boundPlayerData} 
             onShowBinding={handleShowBinding} 
-            onUnbind={handleAccountUnbind} 
+            onUnbind={handleAccountUnbind}
+            onViewAllGames={() => setActiveTab('history')}
           />
         )}
         {activeTab === 'stats' && <StatsScreen />}
-        {activeTab === 'history' && <HistoryScreen />}
+        {activeTab === 'search' && <SearchScreen onViewPlayerHistory={handleViewPlayerHistory} />}
         {activeTab === 'ranking' && <RankingScreen />}
-        <BottomNavigation activeTab={activeTab} onTabPress={setActiveTab} />
+        {activeTab === 'history' && <HistoryScreen boundPlayerData={viewingPlayerData || boundPlayerData} />}
+        <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
     </View>
   );

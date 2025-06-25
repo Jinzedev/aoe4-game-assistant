@@ -139,21 +139,55 @@ export interface SearchParams {
 }
 
 export interface StatsResponse {
+  data: CivilizationStats[];
+  leaderboard: string;
   patch: string;
-  total_games: number;
-  civilizations: CivilizationStats[];
+  rank_level: string | null;
+  rating: string | null;
 }
 
 export interface CivilizationStats {
-  civilization: {
-    item_id: number;
-    name: string;
-    abbreviation: string;
-  };
+  civilization: string; // API返回的是字符串，不是对象
+  duration_average: number;
+  duration_median: number;
   games_count: number;
-  wins: number;
+  pick_rate: number;
+  player_games_count: number;
+  win_count: number;
   win_rate: number;
-  play_rate: number;
+}
+
+// 新增：地图统计数据相关类型
+export interface MapStats {
+  map_id: number;
+  map_name?: string; // 可选，因为API可能返回map字段
+  map?: string; // API实际返回的字段
+  games_count: number;
+  pick_rate?: number;
+  duration_average: number;
+  duration_median: number;
+  win_rate?: number;
+  highest_win_rate_civilization: string; // 该地图上胜率最高的文明
+}
+
+export interface MapStatsResponse {
+  data: MapStats[];
+  leaderboard: string;
+  patch: string;
+  rank_level: string | null;
+  rating: string | null;
+}
+
+export interface MapCivilizationStatsResponse {
+  data: CivilizationStats[];
+  map: {
+    map_id: number;
+    map_name: string;
+  };
+  leaderboard: string;
+  patch: string;
+  rank_level: string | null;
+  rating: string | null;
 }
 
 export interface MonthlyStats {
@@ -186,9 +220,6 @@ class ApiService {
         });
       }
 
-      console.log('🚀 API请求URL:', url.toString());
-      console.log('🚀 请求参数:', params);
-      
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
@@ -197,9 +228,6 @@ class ApiService {
         },
       });
 
-      console.log('📡 响应状态:', response.status, response.statusText);
-      console.log('📡 响应头:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ API错误响应:', errorText);
@@ -207,7 +235,6 @@ class ApiService {
       }
 
       const data = await response.json();
-      console.log('✅ API响应数据:', JSON.stringify(data, null, 2));
       return data;
     } catch (error) {
       console.error('💥 API请求失败:', error);
@@ -281,21 +308,21 @@ class ApiService {
   }
 
   // 获取地图统计数据
-  async getMapStats(leaderboard: string, patch?: string, rating?: string): Promise<any> {
+  async getMapStats(leaderboard: string, patch?: string, rating?: string): Promise<MapStatsResponse> {
     const params: any = {};
     if (patch) params.patch = patch;
     if (rating) params.rating = rating;
     
-    return this.request(`/stats/${leaderboard}/maps`, params);
+    return this.request<MapStatsResponse>(`/stats/${leaderboard}/maps`, params);
   }
 
   // 获取特定地图的文明统计
-  async getMapCivilizationStats(leaderboard: string, mapId: number, patch?: string, rating?: string): Promise<any> {
+  async getMapCivilizationStats(leaderboard: string, mapId: number, patch?: string, rating?: string): Promise<MapCivilizationStatsResponse> {
     const params: any = {};
     if (patch) params.patch = patch;
     if (rating) params.rating = rating;
     
-    return this.request(`/stats/${leaderboard}/maps/${mapId}`, params);
+    return this.request<MapCivilizationStatsResponse>(`/stats/${leaderboard}/maps/${mapId}`, params);
   }
 
   // 获取组队统计数据 (仅限2v2)

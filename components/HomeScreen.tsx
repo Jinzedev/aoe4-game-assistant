@@ -42,27 +42,22 @@ interface HomeScreenProps {
   boundPlayerData?: SearchResult;
   onShowBinding: () => void;
   onUnbind?: () => void;
+  onViewAllGames?: () => void; // 新增：查看全部游戏的回调
 }
 
-export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScreenProps) {
+export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAllGames }: HomeScreenProps) {
   const [monthlyStats, setMonthlyStats] = React.useState<MonthlyStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = React.useState(false);
   const [recentGames, setRecentGames] = React.useState<any[]>([]);
+  const [allGames, setAllGames] = React.useState<any[]>([]); // 存储所有游戏数据
   const [isLoadingGames, setIsLoadingGames] = React.useState(false);
-  // 🔍 打印绑定的玩家数据
+  
+  // 筛选相关状态
+  const [selectedFilter, setSelectedFilter] = React.useState('all'); // all, 1v1, team, thisWeek, wins, losses
+  // 监听玩家数据变化
   React.useEffect(() => {
     if (boundPlayerData) {
-      console.log('=== 主页显示玩家数据 ===');
-      console.log('玩家名称:', boundPlayerData.name);
-      console.log('玩家ID:', boundPlayerData.profile_id);
-      console.log('国家:', boundPlayerData.country);
-             console.log('头像数据:', boundPlayerData.avatars);
-       console.log('1v1数据:', boundPlayerData.leaderboards.rm_solo);
-       console.log('最后对战:', boundPlayerData.last_game_at);
-      console.log('完整数据:', JSON.stringify(boundPlayerData, null, 2));
-    } else {
-      console.log('=== 主页状态 ===');
-      console.log('未绑定玩家数据');
+      // 玩家数据已绑定，可以进行后续操作
     }
   }, [boundPlayerData]);
 
@@ -76,14 +71,10 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
 
       setIsLoadingStats(true);
       try {
-        console.log('📊 开始获取本月表现数据...');
-        
         // 计算本月第一天
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const monthStartISO = monthStart.toISOString();
-        
-        console.log('📅 查询时间范围: 从', monthStartISO, '到现在');
         
         // 获取本月的游戏记录（所有模式）
         const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
@@ -91,12 +82,8 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
           limit: 200 // 增加限制数量，因为包含所有模式
         });
         
-        console.log('🎮 本月游戏数量:', gamesResponse.games.length);
-        console.log('🔍 第一个游戏数据结构:', JSON.stringify(gamesResponse.games[0], null, 2));
-        
         // 计算本月统计
         const stats = calculateMonthlyStats(gamesResponse.games, boundPlayerData.profile_id);
-        console.log('📈 本月统计数据:', stats);
         
         setMonthlyStats(stats);
       } catch (error) {
@@ -128,14 +115,10 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
 
       setIsLoadingGames(true);
       try {
-        console.log('🎮 开始获取最近对战数据...');
-        
         // 获取最近的游戏记录（所有模式）
         const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
           limit: 20 // 获取更多游戏，因为包含了所有模式
         });
-        
-        console.log('🎮 最近游戏数量:', gamesResponse.games.length);
         
         // 转换为UI需要的格式
         const formattedGames = gamesResponse.games
@@ -229,14 +212,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
                 civilization: p.player.civilization
               })) : [{ name: opponentData.name, rating: opponentData.rating || 0, civilization: opponentData.civilization }];
 
-            // 🔍 调试输出玩家数据
-            console.log(`🎮 游戏 ${game.game_id}:`, {
-              playerData: { name: playerData.name, rating: playerData.rating },
-              opponentData: { name: opponentData.name, rating: opponentData.rating },
-              allPlayers,
-              allOpponents,
-              isInvalidGame
-            });
+
 
             return {
               gameId: game.game_id.toString(),
@@ -254,11 +230,12 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
           })
           .filter(game => game !== null);
         
-        console.log('🎮 格式化后的游戏数据:', formattedGames);
-        setRecentGames(formattedGames);
+        setAllGames(formattedGames); // 保存所有游戏数据
+        setRecentGames(formattedGames); // 初始显示所有游戏
         
       } catch (error) {
         console.error('❌ 获取最近对战数据失败:', error);
+        setAllGames([]);
         setRecentGames([]);
       } finally {
         setIsLoadingGames(false);
@@ -267,6 +244,59 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
 
     fetchRecentGames();
   }, [boundPlayerData]);
+
+  // 筛选游戏数据
+  const filterGames = React.useCallback((filter: string) => {
+    if (!allGames.length) return;
+    
+    let filteredGames = [...allGames];
+    
+    switch (filter) {
+      case '1v1':
+        filteredGames = allGames.filter(game => 
+          game.gameMode.includes('1v1')
+        );
+        break;
+      case 'team':
+        filteredGames = allGames.filter(game => 
+          game.gameMode.includes('2v2') || 
+          game.gameMode.includes('3v3') || 
+          game.gameMode.includes('4v4')
+        );
+        break;
+      case 'thisWeek':
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        filteredGames = allGames.filter(game => {
+          // 解析时间，比如 "3天前" -> 3天前的日期
+          const daysMatch = game.timeAgo.match(/(\d+)天前/);
+          if (daysMatch) {
+            const daysAgo = parseInt(daysMatch[1]);
+            return daysAgo <= 7;
+          }
+          return true; // 如果解析失败，保留该游戏
+        });
+        break;
+      case 'wins':
+        filteredGames = allGames.filter(game => game.isWin);
+        break;
+      case 'losses':
+        filteredGames = allGames.filter(game => !game.isWin);
+        break;
+      case 'all':
+      default:
+        filteredGames = allGames;
+        break;
+    }
+    
+    // 限制显示数量
+    setRecentGames(filteredGames.slice(0, 5));
+  }, [allGames]);
+
+  // 当筛选条件改变时更新显示的游戏
+  React.useEffect(() => {
+    filterGames(selectedFilter);
+  }, [selectedFilter, filterGames]);
 
   // 如果没有绑定账户，显示骨架屏状态
   const showSkeleton = !boundPlayerData;
@@ -489,8 +519,17 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
                 {/* 头部区域 */}
                 <View className="mb-6">
                   <View className="flex-row items-center justify-between mb-4">
-                    <Text className="text-lg font-bold text-gray-800">最近对战</Text>
-                    <TouchableOpacity className="bg-purple-100 rounded-full px-3 py-1">
+                    <View>
+                      <Text className="text-lg font-bold text-gray-800">最近对战</Text>
+                      <Text className="text-gray-500 text-sm">
+                        {selectedFilter === 'all' ? `共${allGames.length}场` : 
+                         `筛选出${recentGames.length}场 / 共${allGames.length}场`}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      className="bg-purple-100 rounded-full px-3 py-1"
+                      onPress={onViewAllGames}
+                    >
                       <Text className="text-purple-600 text-sm font-medium">查看全部</Text>
                     </TouchableOpacity>
                   </View>
@@ -498,20 +537,99 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind }: HomeScr
 
                   
                   {/* 筛选标签 */}
-                  <View className="flex-row space-x-2">
-                    <View className="bg-gray-800 rounded-full px-3 py-1">
-                      <Text className="text-white text-xs font-medium">全部</Text>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    className="flex-row"
+                    contentContainerStyle={{ paddingRight: 20 }}
+                  >
+                    <View className="flex-row space-x-2">
+                      <TouchableOpacity 
+                        onPress={() => setSelectedFilter('all')}
+                        className={`rounded-full px-3 py-1 ${
+                          selectedFilter === 'all' ? 'bg-purple-600' : 'bg-gray-100'
+                        }`}
+                      >
+                        <Text className={`text-xs font-medium ${
+                          selectedFilter === 'all' ? 'text-white' : 'text-gray-600'
+                        }`}>
+                          全部
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => setSelectedFilter('wins')}
+                        className={`rounded-full px-3 py-1 flex-row items-center ${
+                          selectedFilter === 'wins' ? 'bg-green-500' : 'bg-gray-100'
+                        }`}
+                      >
+                        <FontAwesome5 
+                          name="trophy" 
+                          size={10} 
+                          color={selectedFilter === 'wins' ? 'white' : '#10b981'} 
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text className={`text-xs font-medium ${
+                          selectedFilter === 'wins' ? 'text-white' : 'text-gray-600'
+                        }`}>
+                          胜利
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => setSelectedFilter('losses')}
+                        className={`rounded-full px-3 py-1 flex-row items-center ${
+                          selectedFilter === 'losses' ? 'bg-red-500' : 'bg-gray-100'
+                        }`}
+                      >
+                        <FontAwesome5 
+                          name="times" 
+                          size={10} 
+                          color={selectedFilter === 'losses' ? 'white' : '#ef4444'} 
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text className={`text-xs font-medium ${
+                          selectedFilter === 'losses' ? 'text-white' : 'text-gray-600'
+                        }`}>
+                          失败
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => setSelectedFilter('1v1')}
+                        className={`rounded-full px-3 py-1 ${
+                          selectedFilter === '1v1' ? 'bg-purple-600' : 'bg-gray-100'
+                        }`}
+                      >
+                        <Text className={`text-xs font-medium ${
+                          selectedFilter === '1v1' ? 'text-white' : 'text-gray-600'
+                        }`}>
+                          1v1
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => setSelectedFilter('team')}
+                        className={`rounded-full px-3 py-1 ${
+                          selectedFilter === 'team' ? 'bg-purple-600' : 'bg-gray-100'
+                        }`}
+                      >
+                        <Text className={`text-xs font-medium ${
+                          selectedFilter === 'team' ? 'text-white' : 'text-gray-600'
+                        }`}>
+                          团队
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => setSelectedFilter('thisWeek')}
+                        className={`rounded-full px-3 py-1 ${
+                          selectedFilter === 'thisWeek' ? 'bg-purple-600' : 'bg-gray-100'
+                        }`}
+                      >
+                        <Text className={`text-xs font-medium ${
+                          selectedFilter === 'thisWeek' ? 'text-white' : 'text-gray-600'
+                        }`}>
+                          本周
+                        </Text>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity className="bg-gray-100 rounded-full px-3 py-1">
-                      <Text className="text-gray-600 text-xs">1v1</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-gray-100 rounded-full px-3 py-1">
-                      <Text className="text-gray-600 text-xs">团队</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-gray-100 rounded-full px-3 py-1">
-                      <Text className="text-gray-600 text-xs">本周</Text>
-                    </TouchableOpacity>
-                  </View>
+                  </ScrollView>
                 </View>
                 
                 {/* 游戏记录 */}

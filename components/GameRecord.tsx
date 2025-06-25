@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { getMapInfo } from '../services/mapImages';
+import { getMapInfo, getChineseMapName } from '../services/mapImages';
 import { getCivilizationInfo } from '../services/civilizationImages';
 
 interface Player {
@@ -81,7 +81,7 @@ export function GameRecord({
             )}
           </View>
           <View>
-            <Text className="font-bold text-gray-800 text-base">{mapName}</Text>
+            <Text className="font-bold text-gray-800 text-base">{getChineseMapName(mapName)}</Text>
             <Text className="text-gray-500 text-sm mt-1">{gameMode} • {duration}</Text>
           </View>
         </View>

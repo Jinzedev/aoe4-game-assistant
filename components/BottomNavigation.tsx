@@ -11,7 +11,7 @@ export function BottomNavigation({ activeTab, onTabPress }: BottomNavigationProp
   const tabs = [
     { key: 'home', name: '主页', icon: 'home' },
     { key: 'stats', name: '统计', icon: 'chart-bar' },
-    { key: 'history', name: '历史', icon: 'clock' },
+    { key: 'search', name: '搜索', icon: 'search' },
     { key: 'ranking', name: '排名', icon: 'chart-line' },
   ];
 
