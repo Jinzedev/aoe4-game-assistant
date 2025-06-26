@@ -1,6 +1,6 @@
 // 应用配置常量
 export const APP_CONFIG = {
-  VERSION: '1.0.1', // 与 app.json 和 package.json 保持同步
+  VERSION: '1.0.2', // 与 app.json 和 package.json 保持同步
   GITHUB_REPO: 'Jinzedev/aoe4-game-assistant', // GitHub仓库
   GITEE_REPO: 'Jinze_JZ/aoe4-game-assistant', // Gitee仓库
   GITEA_URL: 'http://115.190.16.69:3000', // 您的Gitea服务器地址 - 简化部署
