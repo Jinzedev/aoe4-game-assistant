@@ -2,7 +2,7 @@
   "expo": {
     "name": "AOE4游戏助手",
     "slug": "aoe4-game-assistant",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "web": {
       "favicon": "./assets/aoe4.png"
     },
@@ -33,7 +33,10 @@
       },
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "REQUEST_INSTALL_PACKAGES"
       ]
     },
     "extra": {

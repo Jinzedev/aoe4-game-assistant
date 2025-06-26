@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GameRecord } from './GameRecord';
+import { GameRecord } from '../components/GameRecord';
 import { SearchResult } from '../types';
 import { apiService } from '../services/apiService';
 import { getChineseMapName } from '../services/mapImages';

@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
-import UpdateService from '../services/updateService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import UpdateService from '../services/updateService';
 import { APP_CONFIG } from '../constants/App';
 
 interface NetworkSpeed {
@@ -28,51 +28,46 @@ interface DownloadUrls {
 }
 
 export function SettingsScreen() {
-  const [autoCheckUpdate, setAutoCheckUpdate] = useState(true);
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [autoCheckEnabled, setAutoCheckEnabled] = useState(false);
   const [testingNetwork, setTestingNetwork] = useState(false);
   const [networkSpeed, setNetworkSpeed] = useState<NetworkSpeed | null>(null);
-  const [downloadUrls, setDownloadUrls] = useState<DownloadUrls | null>(null);
 
   useEffect(() => {
     loadSettings();
   }, []);
 
   const loadSettings = async () => {
-    const autoCheck = await AsyncStorage.getItem('autoCheckUpdate');
-    setAutoCheckUpdate(autoCheck !== 'false');
+    const autoCheck = await AsyncStorage.getItem('autoUpdateEnabled');
+    setAutoCheckEnabled(autoCheck === 'true');
   };
 
   const saveAutoCheckSetting = async (value: boolean) => {
-    setAutoCheckUpdate(value);
-    await AsyncStorage.setItem('autoCheckUpdate', value.toString());
+    await AsyncStorage.setItem('autoUpdateEnabled', value.toString());
+    setAutoCheckEnabled(value);
   };
 
   const checkForUpdate = async () => {
-    setCheckingUpdate(true);
+    setIsCheckingUpdate(true);
     try {
       const updateInfo = await UpdateService.checkForUpdate();
       
       if (updateInfo.hasUpdate) {
         Alert.alert(
           '发现新版本 🎉',
-          `当前版本：${updateInfo.currentVersion}\n最新版本：${updateInfo.latestVersion}\n来源：${updateInfo.source === 'gitee' ? 'Gitee(码云)' : 'GitHub'}\n\n${updateInfo.releaseNotes || '查看更多详情请访问发布页面'}`,
+          `当前版本: ${updateInfo.currentVersion}\n最新版本: ${updateInfo.latestVersion}\n\n${updateInfo.releaseNotes || ''}`,
           [
-            { text: '取消', style: 'cancel' },
-            { 
-              text: '查看多平台下载', 
-              onPress: () => getDownloadOptions(),
-            },
+            { text: '暂不更新', style: 'cancel' },
             {
-              text: '立即下载',
-              onPress: () => updateInfo.downloadUrl && Linking.openURL(updateInfo.downloadUrl),
-            },
+              text: '下载更新',
+              onPress: () => getDownloadOptions()
+            }
           ]
         );
       } else {
         Alert.alert(
-          '已是最新版本 ✨',
-          `当前版本：${updateInfo.currentVersion}\n检查来源：${updateInfo.source === 'gitee' ? 'Gitee(码云)' : 'GitHub'}`,
+          '已是最新版本 ✅',
+          `当前版本: ${updateInfo.currentVersion}\n没有可用的更新`,
           [{ text: '确定' }]
         );
       }
@@ -83,26 +78,59 @@ export function SettingsScreen() {
         [{ text: '确定' }]
       );
     } finally {
-      setCheckingUpdate(false);
+      setIsCheckingUpdate(false);
     }
   };
 
   const getDownloadOptions = async () => {
     try {
       const urls = await UpdateService.getDownloadUrls();
-      setDownloadUrls(urls);
       
       const options = [];
       if (urls.gitee) {
+        const isGiteeAPK = urls.gitee.endsWith('.apk');
         options.push({
-          text: '🚀 Gitee下载 (推荐)',
-          onPress: () => Linking.openURL(urls.gitee!),
+          text: `🌟 Gitee(码云)${isGiteeAPK ? ' - 推荐' : ''}`,
+          onPress: () => {
+            if (isGiteeAPK) {
+              // APK直链，在浏览器中下载，文件名会自动设置
+              console.log('打开Gitee下载链接:', urls.gitee);
+              Linking.openURL(urls.gitee!).catch(error => {
+                console.error('打开Gitee链接失败:', error);
+                Alert.alert('打开失败', '无法打开Gitee链接');
+              });
+            } else {
+              // Release页面，直接跳转
+              console.log('打开Gitee下载链接:', urls.gitee);
+              Linking.openURL(urls.gitee!).catch(error => {
+                console.error('打开Gitee链接失败:', error);
+                Alert.alert('打开失败', '无法打开Gitee链接');
+              });
+            }
+          },
         });
       }
       if (urls.github) {
+        const isGitHubAPK = urls.github.endsWith('.apk');
         options.push({
-          text: '🐙 GitHub下载',
-          onPress: () => Linking.openURL(urls.github!),
+          text: `🐙 GitHub${isGitHubAPK ? '' : '(Release页面)'}`,
+          onPress: () => {
+            if (isGitHubAPK) {
+              // APK直链，在浏览器中下载
+              console.log('打开GitHub下载链接:', urls.github);
+              Linking.openURL(urls.github!).catch(error => {
+                console.error('打开GitHub链接失败:', error);
+                Alert.alert('打开失败', '无法打开GitHub链接');
+              });
+            } else {
+              // Release页面，直接跳转
+              console.log('打开GitHub下载链接:', urls.github);
+              Linking.openURL(urls.github!).catch(error => {
+                console.error('打开GitHub链接失败:', error);
+                Alert.alert('打开失败', '无法打开GitHub链接');
+              });
+            }
+          },
         });
       }
       options.push({ text: '取消', style: 'cancel' as const });
@@ -247,7 +275,7 @@ export function SettingsScreen() {
               title="自动检查更新"
               subtitle="启动时自动检查新版本"
               hasSwitch={true}
-              switchValue={autoCheckUpdate}
+              switchValue={autoCheckEnabled}
               onSwitchChange={saveAutoCheckSetting}
               hasArrow={false}
             />
@@ -257,7 +285,7 @@ export function SettingsScreen() {
               title="检查更新"
               subtitle={`当前版本 ${APP_CONFIG.VERSION}`}
               hasLoading={true}
-              isLoading={checkingUpdate}
+              isLoading={isCheckingUpdate}
               onPress={checkForUpdate}
             />
 

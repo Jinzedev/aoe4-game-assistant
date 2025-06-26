@@ -6,14 +6,30 @@ interface GitHubRelease {
   published_at: string;
   html_url: string;
   body: string;
+  // 资源文件
+  assets: Array<{
+    name: string;
+    browser_download_url: string;
+    download_count: number;
+  }>;
 }
 
 interface GiteeRelease {
   tag_name: string;
   name: string;
   created_at: string;
-  html_url: string;
+  html_url?: string;
   body: string;
+  // Gitee可能使用不同的字段名
+  url?: string;
+  zipball_url?: string;
+  tarball_url?: string;
+  // 资源文件
+  assets?: Array<{
+    name: string;
+    browser_download_url: string;
+    download_url?: string;
+  }>;
 }
 
 interface UpdateInfo {
@@ -70,16 +86,56 @@ class UpdateService {
       }
 
       const release: GiteeRelease = await response.json();
+      console.log('Gitee API完整响应:', release);
+      
       const latestVersion = this.cleanVersion(release.tag_name);
       const currentVersion = this.cleanVersion(this.CURRENT_VERSION);
 
       const hasUpdate = this.compareVersions(currentVersion, latestVersion) < 0;
 
+      console.log('Gitee Release数据:', {
+        tag_name: release.tag_name,
+        html_url: release.html_url,
+        hasUpdate,
+        currentVersion,
+        latestVersion
+      });
+
+      // 查找APK文件的直接下载链接
+      let downloadUrl = '';
+      
+      if (release.assets && release.assets.length > 0) {
+        // 优先查找正确命名的APK文件：AOE4游戏助手_vX.X.X.apk 或 AOE4游戏助手_X.X.X.apk
+        let apkAsset = release.assets.find(asset => 
+          asset.name.includes('AOE4游戏助手') && asset.name.toLowerCase().endsWith('.apk')
+        );
+        
+        // 如果没找到正确命名的，查找任何APK文件
+        if (!apkAsset) {
+          apkAsset = release.assets.find(asset => 
+            asset.name.toLowerCase().endsWith('.apk')
+          );
+        }
+        
+        if (apkAsset) {
+          downloadUrl = apkAsset.browser_download_url || apkAsset.download_url || '';
+          console.log('找到APK文件:', apkAsset.name, '下载链接:', downloadUrl);
+        }
+      }
+      
+      // 如果没有找到APK文件，回退到Release页面
+      if (!downloadUrl) {
+        downloadUrl = release.html_url || 
+                     release.url || 
+                     `https://gitee.com/${this.GITEE_REPO}/releases/tag/${release.tag_name}`;
+        console.log('未找到APK文件，使用Release页面:', downloadUrl);
+      }
+
       return {
         hasUpdate,
         currentVersion: this.CURRENT_VERSION,
         latestVersion: release.tag_name,
-        downloadUrl: release.html_url,
+        downloadUrl,
         releaseNotes: release.body,
       };
     } catch (error) {
@@ -106,11 +162,48 @@ class UpdateService {
 
     const hasUpdate = this.compareVersions(currentVersion, latestVersion) < 0;
 
+    console.log('GitHub Release数据:', {
+      tag_name: release.tag_name,
+      html_url: release.html_url,
+      hasUpdate,
+      currentVersion,
+      latestVersion
+    });
+
+    // 查找APK文件的直接下载链接
+    let downloadUrl = '';
+    
+    if (release.assets && release.assets.length > 0) {
+      // 优先查找正确命名的APK文件：AOE4游戏助手_vX.X.X.apk 或 AOE4游戏助手_X.X.X.apk
+      let apkAsset = release.assets.find(asset => 
+        asset.name.includes('AOE4游戏助手') && asset.name.toLowerCase().endsWith('.apk')
+      );
+      
+      // 如果没找到正确命名的，查找任何APK文件
+      if (!apkAsset) {
+        apkAsset = release.assets.find(asset => 
+          asset.name.toLowerCase().endsWith('.apk')
+        );
+      }
+      
+      if (apkAsset) {
+        downloadUrl = apkAsset.browser_download_url;
+        console.log('GitHub找到APK文件:', apkAsset.name, '下载链接:', downloadUrl);
+      }
+    }
+    
+    // 如果没有找到APK文件，回退到Release页面
+    if (!downloadUrl) {
+      downloadUrl = release.html_url || 
+                   `https://github.com/${this.GITHUB_REPO}/releases/tag/${release.tag_name}`;
+      console.log('GitHub未找到APK文件，使用Release页面:', downloadUrl);
+    }
+
     return {
       hasUpdate,
       currentVersion: this.CURRENT_VERSION,
       latestVersion: release.tag_name,
-      downloadUrl: release.html_url,
+      downloadUrl,
       releaseNotes: release.body,
     };
   }

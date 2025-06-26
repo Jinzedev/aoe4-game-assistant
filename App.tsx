@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StatsScreen } from './components/StatsScreen';
-import { HistoryScreen } from './components/HistoryScreen';
-import { SearchScreen } from './components/SearchScreen';
-import { SettingsScreen } from './components/SettingsScreen';
-import { HomeScreen } from './components/HomeScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatsScreen } from './screens/StatsScreen';
+import { HistoryScreen } from './screens/HistoryScreen';
+import { SearchScreen } from './screens/SearchScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { HomeScreen } from './screens/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
 import { BottomNavigation } from './components/BottomNavigation';
 import { SearchResult } from './types';
 import StorageService from './services/storageService';
+import UpdateService from './services/updateService';
 
 import './global.css';
 
@@ -22,7 +24,7 @@ export default function App() {
 
   // 应用启动时加载保存的玩家数据
   useEffect(() => {
-    const loadBoundPlayer = async () => {
+    const loadData = async () => {
       try {
         console.log('🚀 应用启动 - 检查本地存储的玩家数据');
         const savedPlayer = await StorageService.getBoundPlayer();
@@ -30,15 +32,60 @@ export default function App() {
           setBoundPlayerData(savedPlayer);
           console.log('✅ 自动恢复玩家数据:', savedPlayer.name);
         }
+        
+        // 检查是否启用自动更新，如果是则执行自动检查
+        await checkAutoUpdate();
       } catch (error) {
-        console.error('❌ 加载保存的玩家数据失败:', error);
+        console.error('❌ 加载数据失败:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadBoundPlayer();
+    loadData();
   }, []);
+
+  const checkAutoUpdate = async () => {
+    try {
+      // 检查自动更新设置
+      const autoUpdateEnabled = await AsyncStorage.getItem('autoUpdateEnabled');
+      if (autoUpdateEnabled !== 'true') {
+        console.log('📱 自动更新检查已禁用');
+        return;
+      }
+
+      // 执行自动更新检查（每次启动都检查）
+      console.log('🔍 执行自动更新检查...');
+      
+      const updateInfo = await UpdateService.checkForUpdate();
+      if (updateInfo && updateInfo.hasUpdate) {
+        console.log('🎉 检测到新版本:', updateInfo.latestVersion);
+        
+        // 显示更新提示
+        showUpdateNotification(updateInfo);
+      } else {
+        console.log('✅ 当前已是最新版本');
+      }
+    } catch (error) {
+      console.log('❌ 自动检查更新失败:', error);
+    }
+  };
+
+  const showUpdateNotification = (updateInfo: any) => {
+    setTimeout(() => {
+      Alert.alert(
+        '🎉 发现新版本',
+        `有新版本 ${updateInfo.latestVersion} 可用！\n\n点击立即下载或稍后在设置页面查看。`,
+        [
+          { text: '稍后下载', style: 'cancel' },
+          {
+            text: '立即查看',
+            onPress: () => setActiveTab('settings')
+          }
+        ]
+      );
+    }, 2000); // 延迟2秒显示，让应用完全启动
+  };
 
   const handleAccountBind = async (playerData: SearchResult) => {
     try {

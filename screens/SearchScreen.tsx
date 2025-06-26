@@ -390,7 +390,7 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
                 热门玩家 🏆
               </Text>
               <Text className="text-gray-500 text-sm mb-4">
-                当前1v1排位赛排名
+                目前1v1排位赛排名
               </Text>
               
               <View>
