@@ -12,7 +12,7 @@ export function BottomNavigation({ activeTab, onTabPress }: BottomNavigationProp
     { key: 'home', name: '主页', icon: 'home' },
     { key: 'stats', name: '统计', icon: 'chart-bar' },
     { key: 'search', name: '搜索', icon: 'search' },
-    { key: 'ranking', name: '排名', icon: 'chart-line' },
+    { key: 'settings', name: '设置', icon: 'cog' },
   ];
 
   return (

@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StatsScreen } from './components/StatsScreen';
 import { HistoryScreen } from './components/HistoryScreen';
 import { SearchScreen } from './components/SearchScreen';
-import { RankingScreen } from './components/RankingScreen';
+import { SettingsScreen } from './components/SettingsScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -128,13 +128,13 @@ export default function App() {
           <HomeScreen 
             boundPlayerData={boundPlayerData} 
             onShowBinding={handleShowBinding} 
-            onUnbind={handleAccountUnbind}
+            onUnbind={handleAccountUnbind} 
             onViewAllGames={() => setActiveTab('history')}
           />
         )}
         {activeTab === 'stats' && <StatsScreen />}
         {activeTab === 'search' && <SearchScreen onViewPlayerHistory={handleViewPlayerHistory} />}
-        {activeTab === 'ranking' && <RankingScreen />}
+        {activeTab === 'settings' && <SettingsScreen />}
         {activeTab === 'history' && <HistoryScreen boundPlayerData={viewingPlayerData || boundPlayerData} />}
         <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />
       </View>

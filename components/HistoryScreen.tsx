@@ -215,8 +215,8 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
 
         {/* 头部 */}
         <View className="px-6 pb-4 pt-10">
-          <View>
-            <Text className="text-2xl font-bold text-white">对战历史</Text>
+            <View>
+              <Text className="text-2xl font-bold text-white">对战历史</Text>
             {boundPlayerData ? (
               <Text className="text-white/60">
                 {boundPlayerData.name} 的征战历程
@@ -338,9 +338,9 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
                 <Text className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">
                   {dateGroup}
                 </Text>
-                <View>
+            <View>
                   {games.map((game) => (
-                    <GameRecord
+              <GameRecord
                       key={game.gameId}
                       mapName={game.mapName}
                       mapIcon="map"
@@ -353,7 +353,7 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
                       opponentIcon="chess-rook"
                       eloChange={game.eloChange}
                       timeAgo={game.timeAgo}
-                    />
+              />
                   ))}
             </View>
           </View>

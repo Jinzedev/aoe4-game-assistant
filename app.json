@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "my-expo-app",
-    "slug": "my-expo-app",
+    "name": "AOE4游戏助手",
+    "slug": "aoe4-game-assistant",
     "version": "1.0.0",
 
     "web": {

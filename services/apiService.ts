@@ -219,7 +219,7 @@ class ApiService {
           }
         });
       }
-
+      
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {

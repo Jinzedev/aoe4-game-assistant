@@ -6,6 +6,8 @@ import { GameRecord } from './GameRecord';
 import { SearchResult } from '../types';
 import { formatTier, formatRankLevel, getRankIcon, getCountryFlag, apiService, calculateMonthlyStats, MonthlyStats } from '../services/apiService';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // 骨架屏组件
 function SkeletonLoader() {
   return (
@@ -51,15 +53,8 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
   const [recentGames, setRecentGames] = React.useState<any[]>([]);
   const [allGames, setAllGames] = React.useState<any[]>([]); // 存储所有游戏数据
   const [isLoadingGames, setIsLoadingGames] = React.useState(false);
-  
   // 筛选相关状态
   const [selectedFilter, setSelectedFilter] = React.useState('all'); // all, 1v1, team, thisWeek, wins, losses
-  // 监听玩家数据变化
-  React.useEffect(() => {
-    if (boundPlayerData) {
-      // 玩家数据已绑定，可以进行后续操作
-    }
-  }, [boundPlayerData]);
 
   // 🔥 获取本月表现数据
   React.useEffect(() => {
@@ -211,8 +206,6 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                 rating: p.player.rating || 0,
                 civilization: p.player.civilization
               })) : [{ name: opponentData.name, rating: opponentData.rating || 0, civilization: opponentData.civilization }];
-
-
 
             return {
               gameId: game.game_id.toString(),
@@ -435,6 +428,8 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
             </View>
           ) : (
             <>
+
+
               {/* 本月表现 */}
               <View className="bg-white/95 rounded-3xl p-6 mb-4 shadow-lg">
                 <View className="flex-row items-center justify-between mb-6">
@@ -520,7 +515,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                 <View className="mb-6">
                   <View className="flex-row items-center justify-between mb-4">
                     <View>
-                      <Text className="text-lg font-bold text-gray-800">最近对战</Text>
+                    <Text className="text-lg font-bold text-gray-800">最近对战</Text>
                       <Text className="text-gray-500 text-sm">
                         {selectedFilter === 'all' ? `共${allGames.length}场` : 
                          `筛选出${recentGames.length}场 / 共${allGames.length}场`}
@@ -543,7 +538,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                     className="flex-row"
                     contentContainerStyle={{ paddingRight: 20 }}
                   >
-                    <View className="flex-row space-x-2">
+                  <View className="flex-row space-x-2">
                       <TouchableOpacity 
                         onPress={() => setSelectedFilter('all')}
                         className={`rounded-full px-3 py-1 ${
@@ -603,7 +598,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                         }`}>
                           1v1
                         </Text>
-                      </TouchableOpacity>
+                    </TouchableOpacity>
                       <TouchableOpacity 
                         onPress={() => setSelectedFilter('team')}
                         className={`rounded-full px-3 py-1 ${
@@ -615,7 +610,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                         }`}>
                           团队
                         </Text>
-                      </TouchableOpacity>
+                    </TouchableOpacity>
                       <TouchableOpacity 
                         onPress={() => setSelectedFilter('thisWeek')}
                         className={`rounded-full px-3 py-1 ${
@@ -627,8 +622,8 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                         }`}>
                           本周
                         </Text>
-                      </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
+                  </View>
                   </ScrollView>
                 </View>
                 

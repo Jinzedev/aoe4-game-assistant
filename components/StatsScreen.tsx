@@ -769,8 +769,8 @@ export function StatsScreen() {
               <View className="flex-row items-center">
                 <FontAwesome5 name="sort-amount-down" size={14} color="#6b7280" />
                 <Text className="text-gray-500 text-sm ml-1">按胜率排序</Text>
-              </View>
-            </View>
+                  </View>
+                  </View>
 
             {loading ? (
               // 加载状态
