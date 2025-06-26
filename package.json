@@ -1,18 +1,24 @@
 {
   "name": "aoe4-game-assistant",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "android": "expo start --android",
     "ios": "expo start --ios",
     "start": "expo start",
     "prebuild": "expo prebuild",
+    "build:android": "eas build --platform android",
+    "build:android-preview": "eas build --platform android --profile preview",
+    "build:android-local": "expo run:android --variant release",
+    "build": "node scripts/build.js",
+    "icons": "node scripts/generate-icons.js",
+    "release": "node scripts/release.js",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
     "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
     "web": "expo start --web"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@tanstack/react-query": "^5.81.2",
     "expo": "^53.0.12",
     "expo-linear-gradient": "~14.1.5",

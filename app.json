@@ -2,36 +2,43 @@
   "expo": {
     "name": "AOE4游戏助手",
     "slug": "aoe4-game-assistant",
-    "version": "1.0.0",
-
+    "version": "1.0.1",
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/aoe4.png"
     },
-
     "experiments": {
       "tsconfigPaths": true
     },
-
     "plugins": [],
-
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-
+    "icon": "./assets/aoe4.png",
     "userInterfaceStyle": "light",
-
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/aoe4.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#1a1a1a"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.jinzedev.aoe4gameassistant",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/aoe4.png",
+        "backgroundColor": "#1a1a1a"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "677bc8b5-8172-440c-96c8-520023212746"
       }
     }
   }
