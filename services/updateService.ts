@@ -61,11 +61,32 @@ class UpdateService {
    */
   private static async checkGiteeUpdate(): Promise<UpdateInfo | null> {
     try {
-      const response = await fetch(
-        `https://gitee.com/api/v5/repos/${this.GITEE_REPO}/releases/latest`
+      // 创建一个Promise用于超时控制（React Native兼容）
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 10000);
+      });
+
+      // 添加请求头来改善兼容性
+      const fetchPromise = fetch(
+        `https://gitee.com/api/v5/repos/${this.GITEE_REPO}/releases/latest`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'AOE4-Game-Assistant'
+          }
+        }
       );
 
+      // 使用Promise.race实现超时
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+
       if (!response.ok) {
+        // 403错误特殊处理
+        if (response.status === 403) {
+          console.warn('Gitee API访问被拒绝(403)，可能是权限限制或频率限制');
+          return null;
+        }
         throw new Error(`Gitee API请求失败: ${response.status}`);
       }
 
@@ -83,7 +104,11 @@ class UpdateService {
         releaseNotes: release.body,
       };
     } catch (error) {
-      console.warn('Gitee更新检查失败:', error);
+      if (error instanceof Error) {
+        console.warn('Gitee更新检查失败:', error.message);
+      } else {
+        console.warn('Gitee更新检查失败:', error);
+      }
       return null;
     }
   }
@@ -165,9 +190,26 @@ class UpdateService {
     const testGitee = async (): Promise<number> => {
       const start = Date.now();
       try {
-        await fetch(`https://gitee.com/api/v5/repos/${this.GITEE_REPO}`, {
-          method: 'HEAD',
+        // React Native兼容的超时处理
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout')), 5000);
         });
+
+        const fetchPromise = fetch(`https://gitee.com/api/v5/repos/${this.GITEE_REPO}`, {
+          method: 'HEAD',
+          headers: {
+            'User-Agent': 'AOE4-Game-Assistant'
+          }
+        });
+
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        
+        // 即使是403错误，也说明能连接到服务器
+        if (response.status === 403) {
+          console.warn('Gitee连接正常，但API访问受限(403)');
+          return Date.now() - start;
+        }
+        
         return Date.now() - start;
       } catch {
         return 9999; // 失败时返回很大的值

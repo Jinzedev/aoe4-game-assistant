@@ -28,25 +28,10 @@ interface DownloadUrls {
 }
 
 export function SettingsScreen() {
-  const [autoCheckUpdate, setAutoCheckUpdate] = useState(true);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [testingNetwork, setTestingNetwork] = useState(false);
   const [networkSpeed, setNetworkSpeed] = useState<NetworkSpeed | null>(null);
   const [downloadUrls, setDownloadUrls] = useState<DownloadUrls | null>(null);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    const autoCheck = await AsyncStorage.getItem('autoCheckUpdate');
-    setAutoCheckUpdate(autoCheck !== 'false');
-  };
-
-  const saveAutoCheckSetting = async (value: boolean) => {
-    setAutoCheckUpdate(value);
-    await AsyncStorage.setItem('autoCheckUpdate', value.toString());
-  };
 
   const checkForUpdate = async () => {
     setCheckingUpdate(true);
@@ -242,16 +227,6 @@ export function SettingsScreen() {
           <View className="mb-6">
             <Text className="text-white font-semibold text-lg mb-3 px-2">应用更新</Text>
             
-            <SettingItem
-              icon="toggle-on"
-              title="自动检查更新"
-              subtitle="启动时自动检查新版本"
-              hasSwitch={true}
-              switchValue={autoCheckUpdate}
-              onSwitchChange={saveAutoCheckSetting}
-              hasArrow={false}
-            />
-
             <SettingItem
               icon="download"
               title="检查更新"

@@ -180,17 +180,8 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
             
             {/* 国旗徽章 */}
             {player.country && (
-              <View 
-                className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full items-center justify-center"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 2,
-                  elevation: 3,
-                }}
-              >
-                <Text className="text-sm" style={{ textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 1 }}>
+              <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-gray-800 rounded-full items-center justify-center border border-white/20">
+                <Text className="text-xs">
                   {getCountryFlag(player.country)}
                 </Text>
               </View>
