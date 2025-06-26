@@ -16,12 +16,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { APP_CONFIG } from '../constants/App';
 
 interface NetworkSpeed {
+  gitea?: number;
   gitee: number;
   github: number;
-  recommended: 'gitee' | 'github';
+  recommended: 'gitea' | 'gitee' | 'github';
 }
 
 interface DownloadUrls {
+  gitea?: string;
   gitee?: string;
   github?: string;
   recommended: string;
@@ -39,9 +41,14 @@ export function SettingsScreen() {
       const updateInfo = await UpdateService.checkForUpdate();
       
       if (updateInfo.hasUpdate) {
+        const sourceMap = {
+          'gitea': 'Gitea(私有服务器)',
+          'gitee': 'Gitee(码云)',
+          'github': 'GitHub'
+        };
         Alert.alert(
           '发现新版本 🎉',
-          `当前版本：${updateInfo.currentVersion}\n最新版本：${updateInfo.latestVersion}\n来源：${updateInfo.source === 'gitee' ? 'Gitee(码云)' : 'GitHub'}\n\n${updateInfo.releaseNotes || '查看更多详情请访问发布页面'}`,
+          `当前版本：${updateInfo.currentVersion}\n最新版本：${updateInfo.latestVersion}\n来源：${sourceMap[updateInfo.source as keyof typeof sourceMap]}\n\n${updateInfo.releaseNotes || '查看更多详情请访问发布页面'}`,
           [
             { text: '取消', style: 'cancel' },
             { 
@@ -55,9 +62,14 @@ export function SettingsScreen() {
           ]
         );
       } else {
+        const sourceMap = {
+          'gitea': 'Gitea(私有服务器)',
+          'gitee': 'Gitee(码云)',
+          'github': 'GitHub'
+        };
         Alert.alert(
           '已是最新版本 ✨',
-          `当前版本：${updateInfo.currentVersion}\n检查来源：${updateInfo.source === 'gitee' ? 'Gitee(码云)' : 'GitHub'}`,
+          `当前版本：${updateInfo.currentVersion}\n检查来源：${sourceMap[updateInfo.source as keyof typeof sourceMap]}`,
           [{ text: '确定' }]
         );
       }
@@ -78,9 +90,15 @@ export function SettingsScreen() {
       setDownloadUrls(urls);
       
       const options = [];
+      if (urls.gitea) {
+        options.push({
+          text: '🏠 Gitea下载 (私有服务器)',
+          onPress: () => Linking.openURL(urls.gitea!),
+        });
+      }
       if (urls.gitee) {
         options.push({
-          text: '🚀 Gitee下载 (推荐)',
+          text: '🚀 Gitee下载 (国内推荐)',
           onPress: () => Linking.openURL(urls.gitee!),
         });
       }
@@ -108,13 +126,24 @@ export function SettingsScreen() {
       const speed = await UpdateService.testNetworkSpeed();
       setNetworkSpeed(speed);
       
+      const giteaStatus = speed.gitea !== undefined ? (speed.gitea < 9999 ? `${speed.gitea}ms` : '连接失败') : '未配置';
       const giteeStatus = speed.gitee < 9999 ? `${speed.gitee}ms` : '连接失败';
       const githubStatus = speed.github < 9999 ? `${speed.github}ms` : '连接失败';
-      const recommendation = speed.recommended === 'gitee' ? 'Gitee(码云)' : 'GitHub';
       
+      const recommendationMap = {
+        'gitea': 'Gitea(私有服务器)',
+        'gitee': 'Gitee(码云)',
+        'github': 'GitHub'
+      };
+      const recommendation = recommendationMap[speed.recommended];
+      
+      const message = giteaStatus !== '未配置' 
+        ? `Gitea连接速度: ${giteaStatus}\nGitee连接速度: ${giteeStatus}\nGitHub连接速度: ${githubStatus}\n\n推荐使用: ${recommendation}`
+        : `Gitee连接速度: ${giteeStatus}\nGitHub连接速度: ${githubStatus}\n\n推荐使用: ${recommendation}`;
+        
       Alert.alert(
         '网络测试结果',
-        `Gitee连接速度: ${giteeStatus}\nGitHub连接速度: ${githubStatus}\n\n推荐使用: ${recommendation}`,
+        message,
         [{ text: '确定' }]
       );
     } catch (error) {
@@ -138,6 +167,15 @@ export function SettingsScreen() {
   const openGitHub = () => {
     const githubUrl = `https://github.com/${APP_CONFIG.GITHUB_REPO}`;
     Linking.openURL(githubUrl);
+  };
+
+  const openGitea = () => {
+    if (APP_CONFIG.GITEA_URL) {
+      const giteaUrl = `${APP_CONFIG.GITEA_URL}/${APP_CONFIG.GITEA_REPO}`;
+      Linking.openURL(giteaUrl);
+    } else {
+      Alert.alert('提示', 'Gitea服务器未配置');
+    }
   };
 
   const openGitee = () => {
@@ -210,14 +248,9 @@ export function SettingsScreen() {
       >
         {/* 头部 */}
         <View className="px-6 pb-4 pt-10">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-2xl font-bold text-white">设置</Text>
-              <Text className="text-white/60">个性化你的体验</Text>
-            </View>
-            <View className="bg-white/10 rounded-2xl p-3">
-              <FontAwesome5 name="cog" size={18} color="white" />
-            </View>
+          <View>
+            <Text className="text-2xl font-bold text-white">设置</Text>
+            <Text className="text-white/60">个性化你的体验</Text>
           </View>
         </View>
 
@@ -240,9 +273,16 @@ export function SettingsScreen() {
               icon="tachometer-alt"
               title="网络测试"
               subtitle={
-                `测试到Gitee和GitHub的连接速度${
-                  networkSpeed ? `\n推荐: ${networkSpeed.recommended === 'gitee' ? 'Gitee' : 'GitHub'}` : ''
-                }`
+                networkSpeed 
+                  ? `推荐: ${
+                      networkSpeed.recommended === 'gitea' ? 'Gitea(私有服务器)' : 
+                      networkSpeed.recommended === 'gitee' ? 'Gitee(码云)' : 'GitHub'
+                    }${networkSpeed.gitea !== undefined ? `\nGitea: ${networkSpeed.gitea < 9999 ? networkSpeed.gitea + 'ms' : '连接失败'}` : ''}${
+                      networkSpeed.gitee < 9999 ? `\nGitee: ${networkSpeed.gitee}ms` : '\nGitee: 连接失败'
+                    }${
+                      networkSpeed.github < 9999 ? `\nGitHub: ${networkSpeed.github}ms` : '\nGitHub: 连接失败'
+                    }`
+                  : '测试到各服务器的连接速度'
               }
               hasLoading={true}
               isLoading={testingNetwork}
@@ -254,6 +294,15 @@ export function SettingsScreen() {
           <View className="mb-6">
             <Text className="text-white font-semibold text-lg mb-3 px-2">项目链接</Text>
             
+            {APP_CONFIG.GITEA_URL && (
+              <SettingItem
+                icon="server"
+                title="🏠 Gitea仓库"
+                subtitle="私有服务器，最新更新首发"
+                onPress={openGitea}
+              />
+            )}
+
             <SettingItem
               icon="rocket"
               title="🚀 Gitee仓库"

@@ -6,6 +6,12 @@ interface GitHubRelease {
   published_at: string;
   html_url: string;
   body: string;
+  assets: Array<{
+    name: string;
+    browser_download_url: string;
+    content_type: string;
+    size: number;
+  }>;
 }
 
 interface GiteeRelease {
@@ -14,6 +20,12 @@ interface GiteeRelease {
   created_at: string;
   html_url: string;
   body: string;
+  assets: Array<{
+    name: string;
+    browser_download_url: string;
+    content_type?: string;
+    size: number;
+  }>;
 }
 
 interface UpdateInfo {
@@ -22,7 +34,7 @@ interface UpdateInfo {
   latestVersion: string;
   downloadUrl?: string;
   releaseNotes?: string;
-  source?: 'github' | 'gitee';
+  source?: 'gitea' | 'github' | 'gitee';
 }
 
 class UpdateService {
@@ -31,10 +43,37 @@ class UpdateService {
   private static readonly CURRENT_VERSION = VERSION_CONFIG.CURRENT;
 
   /**
-   * 检查是否有新版本可用 - 优先使用Gitee，GitHub作为备选
+   * 从release assets中查找APK下载链接
+   */
+  private static findApkDownloadUrl(assets: Array<{name: string; browser_download_url: string}>): string | null {
+    // 查找APK文件
+    const apkAsset = assets.find(asset => 
+      asset.name.toLowerCase().endsWith('.apk') ||
+      asset.name.toLowerCase().includes('android') ||
+      asset.name.toLowerCase().includes('.apk')
+    );
+    
+    return apkAsset ? apkAsset.browser_download_url : null;
+  }
+
+  /**
+   * 检查是否有新版本可用 - 优先使用Gitea（自己的服务器），然后Gitee，最后GitHub
    */
   static async checkForUpdate(): Promise<UpdateInfo> {
-    // 优先尝试Gitee（对中国用户更友好）
+    // 优先尝试Gitea（自己的服务器，最稳定）
+    if (APP_CONFIG.GITEA_URL) {
+      try {
+        console.log('正在从Gitea检查更新...');
+        const giteaResult = await this.checkGiteaUpdate();
+        if (giteaResult) {
+          return { ...giteaResult, source: 'gitea' };
+        }
+      } catch (error) {
+        console.warn('Gitea检查失败，尝试Gitee:', error);
+      }
+    }
+
+    // 备选：尝试Gitee（对中国用户更友好）
     try {
       console.log('正在从Gitee检查更新...');
       const giteeResult = await this.checkGiteeUpdate();
@@ -45,7 +84,7 @@ class UpdateService {
       console.warn('Gitee检查失败，尝试GitHub:', error);
     }
 
-    // 备选：尝试GitHub
+    // 最后备选：尝试GitHub
     try {
       console.log('正在从GitHub检查更新...');
       const githubResult = await this.checkGitHubUpdate();
@@ -53,6 +92,71 @@ class UpdateService {
     } catch (error) {
       console.error('GitHub检查也失败:', error);
       throw new Error('无法检查更新，请检查网络连接或稍后重试');
+    }
+  }
+
+  /**
+   * 从Gitea检查更新
+   */
+  private static async checkGiteaUpdate(): Promise<UpdateInfo | null> {
+    if (!APP_CONFIG.GITEA_URL) {
+      return null;
+    }
+
+    try {
+      // 创建一个Promise用于超时控制（React Native兼容）
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 10000);
+      });
+
+      // Gitea使用类似GitHub的API格式
+      const fetchPromise = fetch(
+        `${APP_CONFIG.GITEA_URL}/api/v1/repos/${APP_CONFIG.GITEA_REPO}/releases/latest`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'AOE4-Game-Assistant'
+          }
+        }
+      );
+
+      // 使用Promise.race实现超时
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+      if (!response.ok) {
+        // 404可能表示没有release，不是错误
+        if (response.status === 404) {
+          console.warn('Gitea仓库没有发布版本');
+          return null;
+        }
+        throw new Error(`Gitea API请求失败: ${response.status}`);
+      }
+
+      const release: GitHubRelease = await response.json(); // Gitea API兼容GitHub格式
+      const latestVersion = this.cleanVersion(release.tag_name);
+      const currentVersion = this.cleanVersion(this.CURRENT_VERSION);
+
+      const hasUpdate = this.compareVersions(currentVersion, latestVersion) < 0;
+
+      // 优先使用直接的APK下载链接，如果没有则使用页面链接
+      const directDownloadUrl = this.findApkDownloadUrl(release.assets);
+      const downloadUrl = directDownloadUrl || release.html_url;
+
+      return {
+        hasUpdate,
+        currentVersion: this.CURRENT_VERSION,
+        latestVersion: release.tag_name,
+        downloadUrl,
+        releaseNotes: release.body,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn('Gitea更新检查失败:', error.message);
+      } else {
+        console.warn('Gitea更新检查失败:', error);
+      }
+      return null;
     }
   }
 
@@ -96,11 +200,15 @@ class UpdateService {
 
       const hasUpdate = this.compareVersions(currentVersion, latestVersion) < 0;
 
+      // 优先使用直接的APK下载链接，如果没有则使用页面链接
+      const directDownloadUrl = this.findApkDownloadUrl(release.assets);
+      const downloadUrl = directDownloadUrl || release.html_url;
+
       return {
         hasUpdate,
         currentVersion: this.CURRENT_VERSION,
         latestVersion: release.tag_name,
-        downloadUrl: release.html_url,
+        downloadUrl,
         releaseNotes: release.body,
       };
     } catch (error) {
@@ -131,19 +239,24 @@ class UpdateService {
 
     const hasUpdate = this.compareVersions(currentVersion, latestVersion) < 0;
 
+    // 优先使用直接的APK下载链接，如果没有则使用页面链接
+    const directDownloadUrl = this.findApkDownloadUrl(release.assets);
+    const downloadUrl = directDownloadUrl || release.html_url;
+
     return {
       hasUpdate,
       currentVersion: this.CURRENT_VERSION,
       latestVersion: release.tag_name,
-      downloadUrl: release.html_url,
+      downloadUrl,
       releaseNotes: release.body,
     };
   }
 
   /**
-   * 获取下载链接 - 根据用户网络环境智能选择
+   * 获取直接的APK下载链接
    */
-  static async getDownloadUrls(): Promise<{
+  static async getDirectDownloadUrls(): Promise<{
+    gitea?: string;
     gitee?: string;
     github?: string;
     recommended: string;
@@ -152,18 +265,33 @@ class UpdateService {
       recommended: '',
     };
 
-    // 尝试获取Gitee下载链接
+    // 尝试获取Gitea直接下载链接
+    if (APP_CONFIG.GITEA_URL) {
+      try {
+        const giteaInfo = await this.checkGiteaUpdate();
+        if (giteaInfo?.downloadUrl) {
+          result.gitea = giteaInfo.downloadUrl;
+          result.recommended = giteaInfo.downloadUrl; // 优先推荐Gitea
+        }
+      } catch (error) {
+        console.warn('获取Gitea下载链接失败:', error);
+      }
+    }
+
+    // 尝试获取Gitee直接下载链接
     try {
       const giteeInfo = await this.checkGiteeUpdate();
       if (giteeInfo?.downloadUrl) {
         result.gitee = giteeInfo.downloadUrl;
-        result.recommended = giteeInfo.downloadUrl; // 优先推荐Gitee
+        if (!result.recommended) {
+          result.recommended = giteeInfo.downloadUrl; // 其次推荐Gitee
+        }
       }
     } catch (error) {
       console.warn('获取Gitee下载链接失败:', error);
     }
 
-    // 尝试获取GitHub下载链接
+    // 尝试获取GitHub直接下载链接
     try {
       const githubInfo = await this.checkGitHubUpdate();
       if (githubInfo?.downloadUrl) {
@@ -180,13 +308,51 @@ class UpdateService {
   }
 
   /**
+   * 获取下载链接 - 保留原方法以兼容性
+   */
+  static async getDownloadUrls(): Promise<{
+    gitea?: string;
+    gitee?: string;
+    github?: string;
+    recommended: string;
+  }> {
+    return this.getDirectDownloadUrls();
+  }
+
+  /**
    * 测试网络连接速度
    */
   static async testNetworkSpeed(): Promise<{
+    gitea?: number;
     gitee: number;
     github: number;
-    recommended: 'gitee' | 'github';
+    recommended: 'gitea' | 'gitee' | 'github';
   }> {
+    const testGitea = async (): Promise<number | undefined> => {
+      if (!APP_CONFIG.GITEA_URL) {
+        return undefined;
+      }
+      
+      const start = Date.now();
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout')), 5000);
+        });
+
+        const fetchPromise = fetch(`${APP_CONFIG.GITEA_URL}/api/v1/repos/${APP_CONFIG.GITEA_REPO}`, {
+          method: 'HEAD',
+          headers: {
+            'User-Agent': 'AOE4-Game-Assistant'
+          }
+        });
+
+        await Promise.race([fetchPromise, timeoutPromise]);
+        return Date.now() - start;
+      } catch {
+        return 9999; // 失败时返回很大的值
+      }
+    };
+
     const testGitee = async (): Promise<number> => {
       const start = Date.now();
       try {
@@ -228,16 +394,36 @@ class UpdateService {
       }
     };
 
-    const [giteeTime, githubTime] = await Promise.all([
+    const [giteaTime, giteeTime, githubTime] = await Promise.all([
+      testGitea(),
       testGitee(),
       testGitHub(),
     ]);
 
-    return {
+    // 确定推荐的源：Gitea > Gitee > GitHub（按速度和优先级）
+    let recommended: 'gitea' | 'gitee' | 'github' = 'github';
+    let bestTime = githubTime;
+
+    if (giteeTime < bestTime) {
+      recommended = 'gitee';
+      bestTime = giteeTime;
+    }
+
+    if (giteaTime !== undefined && giteaTime < bestTime) {
+      recommended = 'gitea';
+    }
+
+    const result: any = {
       gitee: giteeTime,
       github: githubTime,
-      recommended: giteeTime <= githubTime ? 'gitee' : 'github',
+      recommended,
     };
+
+    if (giteaTime !== undefined) {
+      result.gitea = giteaTime;
+    }
+
+    return result;
   }
 
   /**

@@ -260,14 +260,9 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
       >
         {/* 头部 */}
         <View className="px-6 pb-4 pt-10">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-2xl font-bold text-white">搜索玩家</Text>
-              <Text className="text-white/60">发现和分析其他玩家</Text>
-            </View>
-            <View className="bg-white/10 rounded-2xl p-3">
-              <FontAwesome5 name="search" size={18} color="white" />
-            </View>
+          <View>
+            <Text className="text-2xl font-bold text-white">搜索玩家</Text>
+            <Text className="text-white/60">发现和分析其他玩家</Text>
           </View>
         </View>
 
