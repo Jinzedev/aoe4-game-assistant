@@ -14,7 +14,9 @@ interface GameDetailScreenProps {
 
 export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreenProps) {
   const [gameBasicInfo, setGameBasicInfo] = useState<any>(null);
+  const [gameSummary, setGameSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   // 获取游戏基本信息
   const fetchGameBasicInfo = async () => {
@@ -32,9 +34,26 @@ export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreen
     }
   };
 
+  // 获取游戏详细数据
+  const fetchGameSummary = async () => {
+    try {
+      setSummaryLoading(true);
+      console.log('📊 获取游戏详细数据:', { gameId, profileId });
+      const data = await ApiService.getGameSummary(profileId, gameId);
+      setGameSummary(data);
+      console.log('✅ 游戏详细数据:', data);
+    } catch (error) {
+      console.error('❌ 获取游戏详细数据失败:', error);
+      // 详细数据失败不显示错误提示，因为这不是必需的
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (gameId && profileId) {
       fetchGameBasicInfo();
+      fetchGameSummary();
     }
   }, [gameId, profileId]);
 
@@ -277,6 +296,587 @@ export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreen
                                                          </View>
                           </View>
                         </View>
+                      </View>
+                    </View>
+
+                    {/* 对局比较卡片 */}
+                    <View className="bg-white/95 rounded-3xl p-6 mb-4">
+                      <Text className="text-xl font-bold text-gray-800 mb-6">对局比较</Text>
+                      
+                      {/* 玩家对比 */}
+                      <View className="flex-row justify-between items-center mb-6">
+                        {/* 当前玩家 */}
+                        <View className="flex-1">
+                          <View className="flex-row items-center mb-2">
+                            {/* 文明图片 */}
+                            <View className="w-12 h-12 rounded-xl mr-3 overflow-hidden" 
+                                  style={{ backgroundColor: getCivilizationInfo(currentPlayer.civilization).color }}>
+                              {getCivilizationInfo(currentPlayer.civilization).imageUrl ? (
+                                <Image 
+                                  source={{ uri: getCivilizationInfo(currentPlayer.civilization).imageUrl }} 
+                                  className="w-full h-full"
+                                  style={{ resizeMode: 'cover' }}
+                                />
+                              ) : (
+                                <View className="w-full h-full items-center justify-center">
+                                  <FontAwesome5 name="flag" size={16} color="white" />
+                                </View>
+                              )}
+                            </View>
+                            {/* 玩家信息 */}
+                            <View className="flex-1">
+                              <Text className="text-base font-bold text-gray-800 mb-0.5">
+                                {currentPlayer.name || '未知玩家'}
+                              </Text>
+                              <Text className="text-xs text-gray-600">
+                                {getCivilizationInfo(currentPlayer.civilization).name}
+                              </Text>
+                            </View>
+                          </View>
+                          {/* 分数和变化 */}
+                          <View className="flex-row items-center ml-15">
+                            <Text className="text-2xl font-bold text-blue-600 mr-3">
+                              {currentPlayer.rating || 0}
+                            </Text>
+                            {!isInvalidGame && currentPlayer.rating_diff && (
+                              <View className={`px-2.5 py-1 rounded-full ${
+                                currentPlayer.rating_diff > 0 ? 'bg-green-100' : 'bg-red-100'
+                              }`}>
+                                <Text className={`text-sm font-bold ${
+                                  currentPlayer.rating_diff > 0 ? 'text-green-700' : 'text-red-700'
+                                }`}>
+                                  {currentPlayer.rating_diff > 0 ? `+${currentPlayer.rating_diff}` : `${currentPlayer.rating_diff}`}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* VS 分隔符 */}
+                        <View className="mx-4">
+                          <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center">
+                            <Text className="text-gray-600 font-bold text-sm">VS</Text>
+                          </View>
+                        </View>
+
+                        {/* 对手玩家 */}
+                        <View className="flex-1">
+                          <View className="flex-row items-center mb-2">
+                            {/* 文明图片 */}
+                            <View className="w-12 h-12 rounded-xl mr-3 overflow-hidden" 
+                                  style={{ backgroundColor: getCivilizationInfo(opponent.civilization).color }}>
+                              {getCivilizationInfo(opponent.civilization).imageUrl ? (
+                                <Image 
+                                  source={{ uri: getCivilizationInfo(opponent.civilization).imageUrl }} 
+                                  className="w-full h-full"
+                                  style={{ resizeMode: 'cover' }}
+                                />
+                              ) : (
+                                <View className="w-full h-full items-center justify-center">
+                                  <FontAwesome5 name="flag" size={16} color="white" />
+                                </View>
+                              )}
+                            </View>
+                            {/* 玩家信息 */}
+                            <View className="flex-1">
+                              <Text className="text-base font-bold text-gray-800 mb-0.5">
+                                {opponent.name || '未知玩家'}
+                              </Text>
+                              <Text className="text-xs text-gray-600">
+                                {getCivilizationInfo(opponent.civilization).name}
+                              </Text>
+                            </View>
+                          </View>
+                          {/* 分数和变化 */}
+                          <View className="flex-row items-center ml-15">
+                            <Text className="text-2xl font-bold text-blue-600 mr-3">
+                              {opponent.rating || 0}
+                            </Text>
+                            {!isInvalidGame && opponent.rating_diff && (
+                              <View className={`px-2.5 py-1 rounded-full ${
+                                opponent.rating_diff > 0 ? 'bg-green-100' : 'bg-red-100'
+                              }`}>
+                                <Text className={`text-sm font-bold ${
+                                  opponent.rating_diff > 0 ? 'text-green-700' : 'text-red-700'
+                                }`}>
+                                  {opponent.rating_diff > 0 ? `+${opponent.rating_diff}` : `${opponent.rating_diff}`}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* 详细数据对比 */}
+                      <View className="bg-gray-50 rounded-2xl p-4">
+                        <Text className="text-lg font-bold text-gray-800 mb-4 text-center">详细数据</Text>
+                        
+                        {summaryLoading ? (
+                          <View className="items-center py-8">
+                            <ActivityIndicator size="small" color="#8b5cf6" />
+                            <Text className="text-gray-500 mt-2 text-sm">加载详细数据中...</Text>
+                          </View>
+                        ) : gameSummary && gameSummary.players ? (() => {
+                          // 从详细数据中找到对应的玩家
+                          const currentSummaryPlayer = gameSummary.players.find((p: any) => 
+                            Number(p.profileId) === Number(profileId)
+                          );
+                          const opponentSummaryPlayer = gameSummary.players.find((p: any) => 
+                            Number(p.profileId) !== Number(profileId)
+                          );
+
+                          if (!currentSummaryPlayer || !opponentSummaryPlayer) {
+                            return (
+                              <Text className="text-center text-gray-500 py-4">暂无详细数据</Text>
+                            );
+                          }
+
+                          // 通用的对比显示组件
+                          const ComparisonRow = ({ currentValue, opponentValue, higherIsBetter = true }: {
+                            currentValue: number;
+                            opponentValue: number;
+                            higherIsBetter?: boolean;
+                          }) => {
+                            const currentHigher = higherIsBetter ? currentValue > opponentValue : currentValue < opponentValue;
+                            const opponentHigher = higherIsBetter ? opponentValue > currentValue : opponentValue < currentValue;
+                            
+                            return (
+                              <>
+                                <View className={`flex-1 py-2 px-3 rounded-lg ${
+                                  currentHigher ? 'bg-green-100' : 'bg-transparent'
+                                }`}>
+                                  <Text className={`text-sm font-semibold text-center ${
+                                    currentHigher ? 'text-green-800' : 'text-gray-700'
+                                  }`}>
+                                    {currentValue.toLocaleString()}
+                                  </Text>
+                                </View>
+                                <Text className="text-xs text-gray-400 mx-4">vs</Text>
+                                <View className={`flex-1 py-2 px-3 rounded-lg ${
+                                  opponentHigher ? 'bg-green-100' : 'bg-transparent'
+                                }`}>
+                                  <Text className={`text-sm font-semibold text-center ${
+                                    opponentHigher ? 'text-green-800' : 'text-gray-700'
+                                  }`}>
+                                    {opponentValue.toLocaleString()}
+                                  </Text>
+                                </View>
+                              </>
+                            );
+                          };
+
+                          return (
+                            <>
+                              {/* 分数数据 */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">🏆 分数对比</Text>
+                                
+                                {/* 总分 */}
+                                <View className="mb-3">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">总分</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    {(() => {
+                                      const currentScore = currentSummaryPlayer.scores?.total || 0;
+                                      const opponentScore = opponentSummaryPlayer.scores?.total || 0;
+                                      const currentHigher = currentScore > opponentScore;
+                                      const opponentHigher = opponentScore > currentScore;
+                                      
+                                      return (
+                                        <>
+                                          <View className={`flex-1 py-2 px-3 rounded-lg ${
+                                            currentHigher ? 'bg-green-100' : 'bg-transparent'
+                                          }`}>
+                                            <Text className={`text-base font-bold text-center ${
+                                              currentHigher ? 'text-green-800' : 'text-gray-800'
+                                            }`}>
+                                              {currentScore.toLocaleString()}
+                                            </Text>
+                                          </View>
+                                          <Text className="text-xs text-gray-500 mx-4">vs</Text>
+                                          <View className={`flex-1 py-2 px-3 rounded-lg ${
+                                            opponentHigher ? 'bg-green-100' : 'bg-transparent'
+                                          }`}>
+                                            <Text className={`text-base font-bold text-center ${
+                                              opponentHigher ? 'text-green-800' : 'text-gray-800'
+                                            }`}>
+                                              {opponentScore.toLocaleString()}
+                                            </Text>
+                                          </View>
+                                        </>
+                                      );
+                                    })()}
+                                  </View>
+                                </View>
+
+                                {/* 军事分 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">⚔️ 军事</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.scores?.military || 0}
+                                      opponentValue={opponentSummaryPlayer.scores?.military || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 经济分 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">💰 经济</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.scores?.economy || 0}
+                                      opponentValue={opponentSummaryPlayer.scores?.economy || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 科技分 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🔬 科技</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.scores?.technology || 0}
+                                      opponentValue={opponentSummaryPlayer.scores?.technology || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 社会分 */}
+                                <View className="mb-3">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🏛️ 社会</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.scores?.society || 0}
+                                      opponentValue={opponentSummaryPlayer.scores?.society || 0}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* 分隔线 */}
+                              <View className="h-px bg-gray-300 my-4" />
+
+                              {/* 资源消耗数据 */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">💰 资源数据</Text>
+                                
+                                {/* 总资源消耗 */}
+                                <View className="mb-3">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">总消耗</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    {(() => {
+                                      const currentTotal = currentSummaryPlayer.totalResourcesSpent?.total || 0;
+                                      const opponentTotal = opponentSummaryPlayer.totalResourcesSpent?.total || 0;
+                                      const currentHigher = currentTotal > opponentTotal;
+                                      const opponentHigher = opponentTotal > currentTotal;
+                                      
+                                      return (
+                                        <>
+                                          <View className={`flex-1 py-2 px-3 rounded-lg ${
+                                            currentHigher ? 'bg-green-100' : 'bg-transparent'
+                                          }`}>
+                                            <Text className={`text-base font-bold text-center ${
+                                              currentHigher ? 'text-green-800' : 'text-gray-800'
+                                            }`}>
+                                              {currentTotal.toLocaleString()}
+                                            </Text>
+                                          </View>
+                                          <Text className="text-xs text-gray-500 mx-4">vs</Text>
+                                          <View className={`flex-1 py-2 px-3 rounded-lg ${
+                                            opponentHigher ? 'bg-green-100' : 'bg-transparent'
+                                          }`}>
+                                            <Text className={`text-base font-bold text-center ${
+                                              opponentHigher ? 'text-green-800' : 'text-gray-800'
+                                            }`}>
+                                              {opponentTotal.toLocaleString()}
+                                            </Text>
+                                          </View>
+                                        </>
+                                      );
+                                    })()}
+                                  </View>
+                                </View>
+
+                                {/* 食物消耗 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🥖 食物</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.totalResourcesSpent?.food || 0}
+                                      opponentValue={opponentSummaryPlayer.totalResourcesSpent?.food || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 木材消耗 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🪵 木材</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.totalResourcesSpent?.wood || 0}
+                                      opponentValue={opponentSummaryPlayer.totalResourcesSpent?.wood || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 金币消耗 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🪙 金币</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.totalResourcesSpent?.gold || 0}
+                                      opponentValue={opponentSummaryPlayer.totalResourcesSpent?.gold || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 石材消耗 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🪨 石材</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.totalResourcesSpent?.stone || 0}
+                                      opponentValue={opponentSummaryPlayer.totalResourcesSpent?.stone || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 橄榄油消耗 */}
+                                <View className="mb-3">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-xs">🫒 橄榄油</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.totalResourcesSpent?.oliveoil || 0}
+                                      opponentValue={opponentSummaryPlayer.totalResourcesSpent?.oliveoil || 0}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* 分隔线 */}
+                              <View className="h-px bg-gray-300 my-4" />
+
+
+
+                              {/* Military */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">⚔️ 军事</Text>
+                                
+                                {/* 军事生产 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">生产</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.sqprod || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.sqprod || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 击杀 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">击杀</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.sqkill || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.sqkill || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 死亡 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">死亡</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.edeaths || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.edeaths || 0}
+                                      higherIsBetter={false}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* K/D比率 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">K/D</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={(() => {
+                                        const kills = currentSummaryPlayer._stats?.sqkill || 0;
+                                        const deaths = currentSummaryPlayer._stats?.edeaths || 1;
+                                        return deaths > 0 ? parseFloat((kills / deaths).toFixed(2)) : kills;
+                                      })()}
+                                      opponentValue={(() => {
+                                        const kills = opponentSummaryPlayer._stats?.sqkill || 0;
+                                        const deaths = opponentSummaryPlayer._stats?.edeaths || 1;
+                                        return deaths > 0 ? parseFloat((kills / deaths).toFixed(2)) : kills;
+                                      })()}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* 分隔线 */}
+                              <View className="h-px bg-gray-300 my-4" />
+
+                              {/* Buildings */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">🏗️ 建筑</Text>
+                                
+                                {/* 建筑摧毁 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">摧毁</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.structdmg || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.structdmg || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 建筑损失 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">损失</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.blost || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.blost || 0}
+                                      higherIsBetter={false}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* 分隔线 */}
+                              <View className="h-px bg-gray-300 my-4" />
+
+                              {/* Tech */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">🔬 科技</Text>
+                                
+                                {/* 科技研究 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">研究</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.upg || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.upg || 0}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* 分隔线 */}
+                              <View className="h-px bg-gray-300 my-4" />
+
+                              {/* Sacred Sites */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">🏛️ 圣地</Text>
+                                
+                                {/* 圣地占领 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">占领</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.pcap || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.pcap || 0}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 圣地损失 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">损失</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.plost || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.plost || 0}
+                                      higherIsBetter={false}
+                                    />
+                                  </View>
+                                </View>
+
+                                {/* 中立圣地 */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">中立</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer._stats?.precap || 0}
+                                      opponentValue={opponentSummaryPlayer._stats?.precap || 0}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+                              {/* 分隔线 */}
+                              <View className="h-px bg-gray-300 my-4" />
+
+                              {/* Misc */}
+                              <View className="mb-4">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">📊 其他</Text>
+                                
+                                {/* APM */}
+                                <View className="mb-2">
+                                  <View className="flex-row justify-between items-center mb-1">
+                                    <Text className="text-gray-600 text-sm">APM</Text>
+                                  </View>
+                                  <View className="flex-row justify-between items-center">
+                                    <ComparisonRow 
+                                      currentValue={currentSummaryPlayer.apm || 0}
+                                      opponentValue={opponentSummaryPlayer.apm || 0}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+
+
+                            </>
+                          );
+                        })() : (
+                          <Text className="text-center text-gray-500 py-4">暂无详细数据</Text>
+                        )}
                       </View>
                     </View>
                   </ScrollView>

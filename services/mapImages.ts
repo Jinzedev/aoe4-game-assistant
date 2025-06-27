@@ -9,6 +9,12 @@ export interface MapInfo {
 // 地图名称到图片的映射，使用AoE4World官方图片
 export const mapImages: Record<string, MapInfo> = {
   // 使用官方AoE4World图片
+  'Altai': {
+    name: 'Altai',
+    chineseName: '阿尔泰',
+    imageUrl: 'https://static.aoe4world.com/assets/maps/altai-9b272a24dce7dfa3a2e60579a801e7152a4a94f041340ee81bef913d9cc70c6c.png',
+    color: '#8d6e63'
+  },
   'Ancient Spires': {
     name: 'Ancient Spires',
     chineseName: '远古尖塔',
@@ -114,7 +120,7 @@ export const mapImages: Record<string, MapInfo> = {
   'Hill and Dale': {
     name: 'Hill and Dale',
     chineseName: '丘陵山谷',
-    imageUrl: 'https://static.aoe4world.com/assets/maps/hill_and_dale-786767834511f75ca224324806ade2552c4667e89e57a2153c02fd44684ddee.png',
+    imageUrl: 'https://static.aoe4world.com/assets/maps/hill_and_dale-7867678344511f75ca224324806ade2552c4667e89e57a2153c02fd44684ddee.png',
     color: '#059669'
   },
   'Himeyama': {
