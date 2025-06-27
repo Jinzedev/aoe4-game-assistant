@@ -8,6 +8,7 @@ import { SettingsScreen } from './components/SettingsScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
 import { BottomNavigation } from './components/BottomNavigation';
+import { GameDetailScreen } from './components/GameDetailScreen';
 
 import { SearchResult } from './types';
 import StorageService from './services/storageService';
@@ -20,6 +21,8 @@ export default function App() {
   const [showBindingPage, setShowBindingPage] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [viewingPlayerData, setViewingPlayerData] = useState<SearchResult | undefined>(undefined);
+  const [showGameDetail, setShowGameDetail] = useState(false);
+  const [gameDetailData, setGameDetailData] = useState<{gameId: number, profileId: number} | null>(null);
 
   // 应用启动时加载保存的玩家数据
   useEffect(() => {
@@ -93,6 +96,16 @@ export default function App() {
     setActiveTab('history');
   };
 
+  const handleShowGameDetail = (gameId: number, profileId: number) => {
+    setGameDetailData({ gameId, profileId });
+    setShowGameDetail(true);
+  };
+
+  const handleBackFromGameDetail = () => {
+    setShowGameDetail(false);
+    setGameDetailData(null);
+  };
+
 
 
   const handleTabPress = (tab: string) => {
@@ -123,6 +136,20 @@ export default function App() {
     );
   }
 
+  // 如果正在显示游戏详情页面
+  if (showGameDetail && gameDetailData) {
+    return (
+      <View className="flex-1 bg-slate-900">
+        <StatusBar style="light" />
+        <GameDetailScreen 
+          gameId={gameDetailData.gameId}
+          profileId={gameDetailData.profileId}
+          onBack={handleBackFromGameDetail}
+        />
+      </View>
+    );
+  }
+
 
 
   return (
@@ -140,7 +167,7 @@ export default function App() {
         {activeTab === 'stats' && <StatsScreen />}
         {activeTab === 'search' && <SearchScreen onViewPlayerHistory={handleViewPlayerHistory} />}
         {activeTab === 'settings' && <SettingsScreen />}
-        {activeTab === 'history' && <HistoryScreen boundPlayerData={viewingPlayerData || boundPlayerData} />}
+        {activeTab === 'history' && <HistoryScreen boundPlayerData={viewingPlayerData || boundPlayerData} onShowGameDetail={handleShowGameDetail} />}
         <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />
       </View>
     </View>

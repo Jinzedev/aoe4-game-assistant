@@ -9,9 +9,10 @@ import { getChineseMapName } from '../services/mapImages';
 
 interface HistoryScreenProps {
   boundPlayerData?: SearchResult;
+  onShowGameDetail?: (gameId: number, profileId: number) => void;
 }
 
-export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
+export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScreenProps) {
   const [allGames, setAllGames] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [selectedFilter, setSelectedFilter] = React.useState('all'); // all, 1v1, team, wins, losses
@@ -209,8 +210,15 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
 
   // 处理游戏详情查看
   const handleGamePress = (game: any) => {
-    // 暂时禁用详情功能
-    console.log('游戏详情功能暂时禁用:', game.realGameId);
+    if (onShowGameDetail && boundPlayerData?.profile_id && game.realGameId) {
+      onShowGameDetail(game.realGameId, boundPlayerData.profile_id);
+    } else {
+      console.log('无法打开游戏详情:', { 
+        hasCallback: !!onShowGameDetail, 
+        profileId: boundPlayerData?.profile_id, 
+        gameId: game.realGameId 
+      });
+    }
   };
 
   return (
