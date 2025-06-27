@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { getMapInfo, getChineseMapName } from '../services/mapImages';
 import { getCivilizationInfo } from '../services/civilizationImages';
@@ -11,6 +11,7 @@ interface Player {
 }
 
 interface GameRecordProps {
+  gameId?: string | number;
   mapName: string;
   mapIcon: string;
   gameMode: string;
@@ -25,9 +26,11 @@ interface GameRecordProps {
   mapIconColor?: string;
   playerIconColor?: string;
   opponentIconColor?: string;
+  onPress?: () => void;
 }
 
 export function GameRecord({
+  gameId,
   mapName,
   mapIcon,
   gameMode,
@@ -42,6 +45,7 @@ export function GameRecord({
   mapIconColor = '#16a34a',
   playerIconColor = '#eab308',
   opponentIconColor = '#16a34a',
+  onPress,
 }: GameRecordProps) {
   const [imageError, setImageError] = React.useState(false);
   
@@ -61,7 +65,7 @@ export function GameRecord({
   // 获取地图信息
   const mapInfo = getMapInfo(mapName);
 
-  return (
+  const GameContent = () => (
     <View className={`${bgColor} border-l-4 ${borderColor} rounded-xl p-4 mb-3`}>
       {/* 地图信息头部 */}
       <View className="flex-row items-center justify-between mb-4">
@@ -174,4 +178,14 @@ export function GameRecord({
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+        <GameContent />
+      </TouchableOpacity>
+    );
+  }
+
+  return <GameContent />;
 } 

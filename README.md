@@ -22,10 +22,15 @@
 - 详细的对局信息
 - 筛选功能
 
-### 🏆 排名追踪 (RankingScreen)
-- 当前1v1和团队排名
-- 排名趋势图
-- 月度目标设定和进度追踪
+### 🔍 玩家搜索 (SearchScreen)
+- 搜索其他玩家
+- 查看玩家统计数据
+- 比较不同玩家表现
+
+### ⚙️ 设置页面 (SettingsScreen)
+- 应用设置和配置
+- 账户管理
+- 更新检查
 
 ## 技术栈
 
@@ -78,11 +83,26 @@ npx expo start
 
 ```
 my-expo-app/
-├── components/          # 可复用组件
-│   ├── GameRecord.tsx   # 游戏记录卡片组件
-│   ├── StatsScreen.tsx  # 统计页面
-│   ├── HistoryScreen.tsx # 历史页面
-│   └── RankingScreen.tsx # 排名页面
+├── components/          # React Native组件
+│   ├── AccountBinding.tsx   # 账户绑定组件
+│   ├── BottomNavigation.tsx # 底部导航
+│   ├── GameRecord.tsx      # 游戏记录卡片
+│   ├── HistoryScreen.tsx   # 历史记录页面
+│   ├── HomeScreen.tsx      # 主页
+│   ├── SearchResults.tsx   # 搜索结果组件
+│   ├── SearchScreen.tsx    # 搜索页面
+│   ├── SettingsScreen.tsx  # 设置页面
+│   └── StatsScreen.tsx     # 统计页面
+├── services/           # API和数据服务
+│   ├── apiService.ts       # AoE4World API接口
+│   ├── civilizationImages.ts # 文明图标映射
+│   ├── mapImages.ts        # 地图图标映射
+│   ├── storageService.ts   # 本地存储服务
+│   └── updateService.ts    # 更新检查服务
+├── types/              # TypeScript类型定义
+│   └── index.ts
+├── constants/          # 应用常量
+│   └── App.ts
 ├── App.tsx             # 主应用入口
 ├── global.css          # 全局样式
 └── package.json        # 项目配置

@@ -16,6 +16,7 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [selectedFilter, setSelectedFilter] = React.useState('all'); // all, 1v1, team, wins, losses
 
+
   // 获取历史游戏数据
   React.useEffect(() => {
     const fetchAllGames = async () => {
@@ -133,6 +134,7 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
              
              return {
                gameId: game.game_id || Math.random().toString(),
+               realGameId: game.game_id, // 保存真实的游戏ID用于API调用
                mapName: game.map || 'Unknown',
                gameMode,
                duration,
@@ -204,6 +206,12 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
     
     return groups;
   }, [filteredGames]);
+
+  // 处理游戏详情查看
+  const handleGamePress = (game: any) => {
+    // 暂时禁用详情功能
+    console.log('游戏详情功能暂时禁用:', game.realGameId);
+  };
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -342,6 +350,7 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
                   {games.map((game) => (
               <GameRecord
                       key={game.gameId}
+                      gameId={game.realGameId}
                       mapName={game.mapName}
                       mapIcon="map"
                       gameMode={game.gameMode}
@@ -353,6 +362,7 @@ export function HistoryScreen({ boundPlayerData }: HistoryScreenProps) {
                       opponentIcon="chess-rook"
                       eloChange={game.eloChange}
                       timeAgo={game.timeAgo}
+                      onPress={() => handleGamePress(game)}
               />
                   ))}
             </View>

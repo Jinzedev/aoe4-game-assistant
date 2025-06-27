@@ -291,11 +291,6 @@ class ApiService {
 
   // ========== 游戏相关 API ==========
   
-  // 根据游戏ID获取游戏详情
-  async getGame(gameId: number): Promise<Game> {
-    return this.request<Game>(`/games/${gameId}`);
-  }
-
   // ========== 统计数据 API ==========
   
   // 获取文明统计数据
@@ -332,6 +327,155 @@ class ApiService {
     if (rating) params.rating = rating;
     
     return this.request(`/stats/${leaderboard}/teams`, params);
+  }
+
+  // 新增：获取游戏详细分析数据（测试方法）
+  async getGameSummary(profileId: number, gameId: number): Promise<any> {
+    try {
+      // 先尝试不带sig参数的情况
+      const url = `https://aoe4world.com/players/${profileId}/games/${gameId}/summary?camelize=true`;
+      console.log('🔗 API请求URL:', url);
+      console.log('📋 请求参数 - ProfileId:', profileId, 'GameId:', gameId);
+      
+      const response = await fetch(url);
+      console.log('📡 HTTP响应状态:', response.status, response.statusText);
+      console.log('📡 响应头:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ HTTP错误响应内容:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      console.log('✅ API调用成功！');
+      console.log('=====================================');
+      
+      // 🎮 【游戏基本信息】
+      console.group('🎮 【游戏基本信息】');
+      console.log('游戏ID:', data.gameId);
+      console.log('地图名称:', data.mapName);
+      console.log('地图ID:', data.mapId);
+      console.log('地图大小:', data.mapSize);
+      console.log('地图生物群系:', data.mapBiome);
+      console.log('游戏时长:', `${Math.floor(data.duration / 60)}分${data.duration % 60}秒`);
+      console.log('胜负原因:', data.winReason);
+      console.log('排行榜类型:', data.leaderboard);
+      console.log('观众数量:', data.spectatorsCount);
+      console.log('开始时间:', new Date(data.startedAt * 1000).toLocaleString());
+      console.log('结束时间:', new Date(data.finishedAt * 1000).toLocaleString());
+      console.groupEnd();
+      
+      // 👥 【玩家概览】
+      console.group('👥 【玩家概览】');
+      console.log('玩家数量:', data.players?.length || 0);
+      if (data.players && data.players.length > 0) {
+        data.players.forEach((player: any, index: number) => {
+          console.log(`玩家${index + 1}: ${player.name} (${player.civilization}) - ${player.result}`);
+        });
+      }
+      console.groupEnd();
+      
+      // 🏗️ 【建造顺序数据】
+      console.group('🏗️ 【建造顺序数据】');
+      if (data.players && data.players.length > 0) {
+        data.players.forEach((player: any, index: number) => {
+          console.group(`玩家${index + 1}: ${player.name}`);
+          if (player.buildOrder && player.buildOrder.length > 0) {
+            console.log('✅ 包含建造顺序，共', player.buildOrder.length, '项');
+            console.log('前10项预览:', player.buildOrder.slice(0, 10).map((item: any) => ({
+              type: item.type,
+              id: item.id,
+              finished: item.finished?.slice(0, 3) // 只显示前3个时间点
+            })));
+          } else {
+            console.log('❌ 无建造顺序数据');
+          }
+          console.groupEnd();
+        });
+      }
+      console.groupEnd();
+      
+      // 💰 【资源统计数据】
+      console.group('💰 【资源统计数据】');
+      if (data.players && data.players.length > 0) {
+        data.players.forEach((player: any, index: number) => {
+          console.group(`玩家${index + 1}: ${player.name}`);
+          if (player.resources) {
+            console.log('✅ 包含资源数据');
+            console.log('数据字段:', Object.keys(player.resources));
+            console.log('时间戳数量:', player.resources.timestamps?.length || 0);
+            console.log('总资源收集:', player.totalResourcesGathered);
+            console.log('总资源消耗:', player.totalResourcesSpent);
+          } else {
+            console.log('❌ 无资源数据');
+          }
+          console.groupEnd();
+        });
+      }
+      console.groupEnd();
+      
+      // ⚡ 【行动和升级数据】
+      console.group('⚡ 【行动和升级数据】');
+      if (data.players && data.players.length > 0) {
+        data.players.forEach((player: any, index: number) => {
+          console.group(`玩家${index + 1}: ${player.name}`);
+          if (player.actions) {
+            console.log('✅ 包含行动数据');
+            console.log('行动类型:', Object.keys(player.actions));
+            console.log('行动总数:', Object.values(player.actions).flat().length);
+            
+            // 显示一些关键行动
+            if (player.actions.feudalAge) console.log('封建时代:', player.actions.feudalAge);
+            if (player.actions.castleAge) console.log('城堡时代:', player.actions.castleAge);
+            if (player.actions.imperialAge) console.log('帝王时代:', player.actions.imperialAge);
+          } else {
+            console.log('❌ 无行动数据');
+          }
+          console.groupEnd();
+        });
+      }
+      console.groupEnd();
+      
+      // 📊 【统计和评分数据】
+      console.group('📊 【统计和评分数据】');
+      if (data.players && data.players.length > 0) {
+        data.players.forEach((player: any, index: number) => {
+          console.group(`玩家${index + 1}: ${player.name}`);
+          if (player._stats) {
+            console.log('✅ 包含统计数据');
+            console.log('详细统计:', player._stats);
+          }
+          if (player.scores) {
+            console.log('✅ 包含评分数据');
+            console.log('评分明细:', player.scores);
+          }
+          if (player.apm) {
+            console.log('APM (每分钟操作):', player.apm);
+          }
+          console.groupEnd();
+        });
+      }
+      console.groupEnd();
+      
+      // 🔍 【完整数据结构】(可选，用于深度分析)
+      console.group('🔍 【完整数据结构】');
+      console.log('如需查看完整JSON，请展开以下内容:');
+      console.log(data);
+      console.groupEnd();
+      
+      console.log('=====================================');
+      
+      return data;
+    } catch (error) {
+      console.error('❌ 获取游戏总结失败:', error);
+      console.error('❌ 错误详情:', {
+        message: error instanceof Error ? error.message : '未知错误',
+        stack: error instanceof Error ? error.stack : '无堆栈信息'
+      });
+      throw error;
+    }
   }
 }
 

@@ -8,6 +8,7 @@ import { SettingsScreen } from './components/SettingsScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
 import { BottomNavigation } from './components/BottomNavigation';
+
 import { SearchResult } from './types';
 import StorageService from './services/storageService';
 
@@ -92,6 +93,8 @@ export default function App() {
     setActiveTab('history');
   };
 
+
+
   const handleTabPress = (tab: string) => {
     // 当切换到非历史页面时，清除正在查看的玩家数据
     if (tab !== 'history') {
@@ -119,6 +122,8 @@ export default function App() {
       </View>
     );
   }
+
+
 
   return (
     <View className="flex-1 bg-slate-900">

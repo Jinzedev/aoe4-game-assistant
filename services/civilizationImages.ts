@@ -99,6 +99,17 @@ const civilizationMap: { [key: string]: CivilizationInfo } = {
     name: '朱熹之学',
     imageUrl: 'https://static.aoe4world.com/assets/flags/zhu_xis_legacy-c4d119a5fc11f2355f41d206a8b65bea8bab2286d09523a81b7d662d1aad0762.png',
     color: '#ff4500'
+  },
+  // 添加一些可能缺失的变体名称
+  'japan': {
+    name: '日本',
+    imageUrl: 'https://static.aoe4world.com/assets/flags/japanese-16a9b5bae87a5494d5a002cf7a2c2c5de5cead128a965cbf3a89eeee8292b997.png',
+    color: '#dc143c'
+  },
+  'dragon': {
+    name: '龙骑士团',
+    imageUrl: 'https://static.aoe4world.com/assets/flags/order_of_the_dragon-cad6fa9212fd59f9b52aaa83b4a6173f07734d38d37200f976bcd46827667424.png',
+    color: '#8b0000'
   }
 };
 
@@ -115,11 +126,63 @@ export function getCivilizationInfo(civilization: string): CivilizationInfo {
   }
   
   if (!result) {
+    // 中文名称映射到英文键
+    const chineseToEnglish: { [key: string]: string } = {
+      '龙骑士团': 'order_of_the_dragon',
+      '日本': 'japanese',
+      '中国': 'chinese',
+      '英格兰': 'english',
+      '法兰西': 'french',
+      '神圣罗马帝国': 'holy_roman_empire',
+      '德里苏丹国': 'delhi_sultanate',
+      '阿拔斯王朝': 'abbasid_dynasty',
+      '蒙古': 'mongols',
+      '马里': 'malians',
+      '奥斯曼': 'ottomans',
+      '罗斯': 'rus',
+      '圣殿骑士团': 'knights_templar',
+      '圣女贞德': 'jeanne_darc',
+      '兰开斯特家族': 'house_of_lancaster',
+      '朱熹之学': 'zhu_xis_legacy',
+      '拜占庭': 'byzantine',
+      '阿尤布王朝': 'ayyubids'
+    };
+    
+    const chineseKey = chineseToEnglish[civilization];
+    if (chineseKey) {
+      result = civilizationMap[chineseKey];
+    }
+  }
+  
+  if (!result) {
     // 尝试一些常见的别名
     const aliases: { [key: string]: string } = {
       'byzant': 'byzantine',
       'byzantium': 'byzantine',
-      'byz': 'byzantine'
+      'byz': 'byzantine',
+      // 添加更多可能的API返回格式
+      'china': 'chinese',
+      'england': 'english',
+      'france': 'french',
+      'holy roman empire': 'holy_roman_empire',
+      'hre': 'holy_roman_empire',
+      'delhi': 'delhi_sultanate',
+      'abbasid': 'abbasid_dynasty',
+      'japan': 'japanese',
+      'mongol': 'mongols',
+      'mali': 'malians',
+      'ottoman': 'ottomans',
+      'russia': 'rus',
+      'rus_principalities': 'rus',
+      'order of the dragon': 'order_of_the_dragon',
+      'dragon': 'order_of_the_dragon',
+      'templar': 'knights_templar',
+      'knights': 'knights_templar',
+      'jeanne': 'jeanne_darc',
+      'joan': 'jeanne_darc',
+      'lancaster': 'house_of_lancaster',
+      'zhu xi': 'zhu_xis_legacy',
+      'zhu_xi': 'zhu_xis_legacy'
     };
     const aliasKey = aliases[civKey];
     if (aliasKey) {
