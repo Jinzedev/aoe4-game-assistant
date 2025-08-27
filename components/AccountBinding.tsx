@@ -23,10 +23,6 @@ export function AccountBinding({ onBind, onBack }: AccountBindingProps) {
       return;
     }
 
-    if (playerName.trim().length < 3) {
-      Alert.alert('提示', '玩家名称至少需要3个字符');
-      return;
-    }
 
     setIsSearching(true);
     try {
