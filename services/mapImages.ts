@@ -119,7 +119,7 @@ export const mapImages: Record<string, MapInfo> = {
   },
   'Hill and Dale': {
     name: 'Hill and Dale',
-    chineseName: '丘陵山谷',
+    chineseName: '高山深谷',
     imageUrl: 'https://static.aoe4world.com/assets/maps/hill_and_dale-7867678344511f75ca224324806ade2552c4667e89e57a2153c02fd44684ddee.png',
     color: '#059669'
   },
