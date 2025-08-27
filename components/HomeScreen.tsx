@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, AppState } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GameRecord } from './GameRecord';

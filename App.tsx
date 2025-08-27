@@ -12,6 +12,7 @@ import { GameDetailScreen } from './components/GameDetailScreen';
 
 import { SearchResult } from './types';
 import StorageService from './services/storageService';
+import { apiService } from './services/apiService';
 
 import './global.css';
 
@@ -24,18 +25,38 @@ export default function App() {
   const [showGameDetail, setShowGameDetail] = useState(false);
   const [gameDetailData, setGameDetailData] = useState<{gameId: number, profileId: number} | null>(null);
 
-  // 应用启动时加载保存的玩家数据
+  // 应用启动时加载保存的玩家ID并获取最新数据
   useEffect(() => {
     const loadBoundPlayer = async () => {
       try {
-        console.log('🚀 应用启动 - 检查本地存储的玩家数据');
-        const savedPlayer = await StorageService.getBoundPlayer();
-        if (savedPlayer) {
-          setBoundPlayerData(savedPlayer);
-          console.log('✅ 自动恢复玩家数据:', savedPlayer.name);
+        console.log('🚀 应用启动 - 检查本地存储的玩家ID');
+        const savedPlayerId = await StorageService.getBoundPlayerId();
+        
+        if (savedPlayerId) {
+          console.log('🔄 根据ID获取最新玩家数据:', savedPlayerId);
+          
+          // 根据ID获取最新的玩家数据
+          const latestPlayerData = await apiService.getPlayer(savedPlayerId);
+          
+          // 构建 SearchResult 对象
+          const playerData: SearchResult = {
+            profile_id: latestPlayerData.profile_id,
+            name: latestPlayerData.name,
+            country: latestPlayerData.country,
+            avatars: latestPlayerData.avatars,
+            leaderboards: latestPlayerData.leaderboards,
+            last_game_at: latestPlayerData.last_game_at
+          };
+          
+          setBoundPlayerData(playerData);
+          console.log('✅ 自动恢复并更新玩家数据:', playerData.name);
+        } else {
+          console.log('📝 没有保存的玩家ID');
         }
       } catch (error) {
         console.error('❌ 加载保存的玩家数据失败:', error);
+        // 如果获取失败，可能是网络问题或玩家不存在，清除无效ID
+        await StorageService.removeBoundPlayer();
       } finally {
         setIsLoading(false);
       }
@@ -43,6 +64,46 @@ export default function App() {
 
     loadBoundPlayer();
   }, []);
+
+  // ✨ 刷新用户基本信息
+  const refreshPlayerData = async (): Promise<SearchResult | null> => {
+    if (!boundPlayerData) {
+      console.log('⚠️ 没有绑定的玩家数据，无法刷新');
+      return null;
+    }
+
+    try {
+      console.log('🔄 开始刷新用户基本信息:', boundPlayerData.name);
+      
+      // 通过profile_id获取最新的玩家信息
+      const latestPlayerData = await apiService.getPlayer(boundPlayerData.profile_id);
+      
+      // 构建更新后的SearchResult对象
+      const updatedPlayerData: SearchResult = {
+        profile_id: latestPlayerData.profile_id,
+        name: latestPlayerData.name,
+        country: latestPlayerData.country,
+        avatars: latestPlayerData.avatars,
+        leaderboards: latestPlayerData.leaderboards,
+        last_game_at: latestPlayerData.last_game_at
+      };
+      
+      // 更新状态（不需要再次保存到本地，因为ID已经保存了）
+      setBoundPlayerData(updatedPlayerData);
+      
+      console.log('✅ 用户信息刷新成功:', {
+        name: updatedPlayerData.name,
+        rating: updatedPlayerData.leaderboards?.rm_solo?.rating || 'N/A',
+        games: updatedPlayerData.leaderboards?.rm_solo?.games_count || 'N/A',
+        updateTime: new Date().toLocaleTimeString()
+      });
+      
+      return updatedPlayerData;
+    } catch (error) {
+      console.error('❌ 刷新用户信息失败:', error);
+      return null;
+    }
+  };
 
   const handleAccountBind = async (playerData: SearchResult) => {
     try {
