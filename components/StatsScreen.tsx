@@ -274,11 +274,25 @@ export function StatsScreen() {
   // 获取个人数据
   const fetchPersonalData = async () => {
     try {
-      const player = await StorageService.getBoundPlayer();
-      if (!player) {
+      // 使用新的存储策略：获取玩家ID
+      const playerId = await StorageService.getBoundPlayerId();
+      if (!playerId) {
         console.log('📝 未绑定玩家，跳过个人数据获取');
         return;
       }
+      
+      // 根据ID获取最新的玩家数据
+      const latestPlayerData = await apiService.getPlayer(playerId);
+      
+      // 构建 SearchResult 对象
+      const player: SearchResult = {
+        profile_id: latestPlayerData.profile_id,
+        name: latestPlayerData.name,
+        country: latestPlayerData.country,
+        avatars: latestPlayerData.avatars,
+        leaderboards: latestPlayerData.leaderboards,
+        last_game_at: latestPlayerData.last_game_at
+      };
       
       setBoundPlayer(player);
       console.log('👤 获取个人游戏数据:', player.name);
@@ -383,14 +397,22 @@ export function StatsScreen() {
                 </View>
               </View>
               
-              {/* 前三名文明 */}
+              {/* 文明使用统计 */}
               <View className="space-y-3">
                 {Array.from(personalCivStats.entries())
                   .sort(([,a], [,b]) => b.total - a.total) // 按使用次数排序
-                  .slice(0, 3) // 只显示前3个
+                  .slice(0, 6) // 显示前6个文明
                   .map(([civilization, stats], index) => {
                     const civInfo = getCivilizationInfo(civilization);
-                    const rankColors = ['#f59e0b', '#e5e7eb', '#cd7f32']; // 金银铜
+                    // 扩展的颜色方案：金蓝铜 + 紫色系
+                    const rankColors = [
+                      '#f59e0b', // 金色 - 第1名
+                      '#3b82f6', // 蓝色 - 第2名
+                      '#cd7f32', // 铜色 - 第3名
+                      '#8b5cf6', // 紫色 - 第4名
+                      '#06b6d4', // 青色 - 第5名
+                      '#10b981'  // 绿色 - 第6名
+                    ];
                     const rankColor = rankColors[index] || '#6b7280';
                     
                     return (
@@ -453,7 +475,7 @@ export function StatsScreen() {
               </View>
               
               {/* 查看更多按钮 */}
-              {personalCivStats.size > 3 && (
+              {personalCivStats.size > 6 && (
                 <TouchableOpacity className="mt-4 bg-purple-50 rounded-2xl p-3">
                   <Text className="text-purple-700 font-medium text-center">
                     查看全部 {personalCivStats.size} 个文明数据
