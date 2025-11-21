@@ -1,4 +1,21 @@
 // 搜索结果类型定义
+// 说明：AoE4World 的玩家数据里，排位和快速匹配都会写在 leaderboards 字段里，
+// 不同模式的字段结构是一样的，这里抽成一个通用类型，方便在各个模式之间复用。
+export interface SearchResultLeaderboardEntry {
+  rating: number;
+  rank: number;
+  rank_level: string;
+  streak: number;
+  games_count: number;
+  wins_count: number;
+  losses_count: number;
+  disputes_count?: number;
+  drops_count?: number;
+  last_game_at: string;
+  win_rate: number;
+  season?: number;
+}
+
 export interface SearchResult {
   profile_id: number;
   name: string;
@@ -8,21 +25,14 @@ export interface SearchResult {
     medium: string;
     large: string;
   };
+  // 覆盖 AoE4World 目前常见的几种模式，保持和 apiService.Player.leaderboards 一致
   leaderboards: {
-    rm_solo?: {
-      rating: number;
-      rank: number;
-      rank_level: string;
-      streak: number;
-      games_count: number;
-      wins_count: number;
-      losses_count: number;
-      disputes_count?: number;
-      drops_count?: number;
-      last_game_at: string;
-      win_rate: number;
-      season?: number;
-    };
+    rm_solo?: SearchResultLeaderboardEntry; // 排位 1v1
+    rm_team?: SearchResultLeaderboardEntry; // 排位 组队
+    qm_1v1?: SearchResultLeaderboardEntry;  // 快速匹配 1v1
+    qm_2v2?: SearchResultLeaderboardEntry;
+    qm_3v3?: SearchResultLeaderboardEntry;
+    qm_4v4?: SearchResultLeaderboardEntry;
   };
   last_game_at?: string;
 }
@@ -41,40 +51,12 @@ export interface NavigationTab {
   icon: string;
 }
 
-// Build Order 相关类型定义
-export interface BuildOrderItem {
-  id: string;
-  icon: string;  // 图标路径，如 "icons/races/hre_historic/units/gilded_villager"
-  pbgid: number;
-  modid: string | null;
-  type: "Unit" | "Building" | "Upgrade" | "Age" | "Animal";
-  finished: number[];  // 完成时间数组，每个数字代表一个单位完成的游戏内秒数
-  constructed: number[];
-  packed: number[];
-  unpacked: number[];
-  transformed: number[];
-  destroyed: number[];
-  unknown: Record<string, number[]>;
-}
-
-export interface ParsedBuildOrderItem {
-  time: number;
-  formattedTime: string;
-  type: "Unit" | "Building" | "Upgrade" | "Age" | "Animal";
-  name: string;
-  icon: string;
-  iconUrl: string;
-  id: string;
-  count?: number;
-}
-
 export interface GameSummaryPlayer {
   profileId: number;
   name: string;
   civilization: string;
   team: number;
   result: "win" | "loss";
-  buildOrder: BuildOrderItem[];
   scores?: {
     total: number;
     military: number;

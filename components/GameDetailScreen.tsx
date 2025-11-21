@@ -1,12 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, ImageSourcePropType } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import ApiService from '../services/apiService';
 import { getMapInfo, getChineseMapName } from '../services/mapImages';
 import { getCivilizationInfo } from '../services/civilizationImages';
-import { parseBuildOrder, getTypeColor, getTypeIcon, groupBuildOrderByTime } from '../services/buildOrderService';
-import { ParsedBuildOrderItem, GameSummary } from '../types';
+
+// 安全的图片组件，带错误处理
+function SafeImage({ source, style, className, fallback }: { 
+  source: ImageSourcePropType; 
+  style?: any; 
+  className?: string;
+  fallback?: React.ReactNode;
+}) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError) {
+    return <>{fallback}</>;
+  }
+
+  return (
+    <Image
+      source={source}
+      style={style}
+      className={className}
+      onError={() => {
+        console.log('图片加载失败');
+        setImageError(true);
+      }}
+    />
+  );
+}
 
 interface GameDetailScreenProps {
   gameId: number;
@@ -197,10 +221,11 @@ export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreen
                       <View className="flex-row items-center mb-4">
                         <View className="w-16 h-16 rounded-2xl mr-4 overflow-hidden" style={{ backgroundColor: mapInfo.color }}>
                           {mapInfo.imageUrl ? (
-                            <Image 
+                            <SafeImage 
                               source={{ uri: mapInfo.imageUrl }} 
                               className="w-full h-full"
                               style={{ resizeMode: 'cover' }}
+                              fallback={<View className="w-full h-full items-center justify-center"><FontAwesome5 name="map" size={24} color="white" /></View>}
                             />
                           ) : (
                             <View className="w-full h-full items-center justify-center">
@@ -308,10 +333,11 @@ export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreen
                             <View className="w-12 h-12 rounded-xl mr-3 overflow-hidden" 
                                   style={{ backgroundColor: getCivilizationInfo(currentPlayer.civilization).color }}>
                               {getCivilizationInfo(currentPlayer.civilization).imageUrl ? (
-                                <Image 
+                                <SafeImage 
                                   source={{ uri: getCivilizationInfo(currentPlayer.civilization).imageUrl }} 
                                   className="w-full h-full"
                                   style={{ resizeMode: 'cover' }}
+                                  fallback={<View className="w-full h-full items-center justify-center"><FontAwesome5 name="flag" size={16} color="white" /></View>}
                                 />
                               ) : (
                                 <View className="w-full h-full items-center justify-center">
@@ -362,10 +388,11 @@ export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreen
                             <View className="w-12 h-12 rounded-xl mr-3 overflow-hidden" 
                                   style={{ backgroundColor: getCivilizationInfo(opponent.civilization).color }}>
                               {getCivilizationInfo(opponent.civilization).imageUrl ? (
-                                <Image 
+                                <SafeImage 
                                   source={{ uri: getCivilizationInfo(opponent.civilization).imageUrl }} 
                                   className="w-full h-full"
                                   style={{ resizeMode: 'cover' }}
+                                  fallback={<View className="w-full h-full items-center justify-center"><FontAwesome5 name="flag" size={16} color="white" /></View>}
                                 />
                               ) : (
                                 <View className="w-full h-full items-center justify-center">
@@ -876,184 +903,6 @@ export function GameDetailScreen({ gameId, profileId, onBack }: GameDetailScreen
                       </View>
                     </View>
 
-                    {/* Build Order 卡片 */}
-                    {gameSummary && gameSummary.players && (() => {
-                      const currentSummaryPlayer = gameSummary.players.find((p: any) => 
-                        Number(p.profileId) === Number(profileId)
-                      );
-                      const opponentSummaryPlayer = gameSummary.players.find((p: any) => 
-                        Number(p.profileId) !== Number(profileId)
-                      );
-
-                      console.log('🏗️ Build Order Debug:', {
-                        currentPlayer: currentSummaryPlayer?.name,
-                        currentBuildOrderLength: currentSummaryPlayer?.buildOrder?.length,
-                        opponentPlayer: opponentSummaryPlayer?.name,
-                        opponentBuildOrderLength: opponentSummaryPlayer?.buildOrder?.length
-                      });
-
-                      if (!currentSummaryPlayer?.buildOrder && !opponentSummaryPlayer?.buildOrder) {
-                        return (
-                          <View className="bg-white/90 backdrop-blur-sm rounded-2xl mx-4 mb-4 p-4 shadow-lg">
-                            <Text className="text-lg font-bold text-gray-800 mb-2">🏗️ Build Order</Text>
-                            <Text className="text-red-600">暂无 Build Order 数据</Text>
-                          </View>
-                        );
-                      }
-
-                      // 解析 Build Order 数据 - 显示全部时间
-                      const currentBuildOrder = currentSummaryPlayer?.buildOrder ? 
-                        parseBuildOrder(currentSummaryPlayer.buildOrder) : [];
-                      const opponentBuildOrder = opponentSummaryPlayer?.buildOrder ? 
-                        parseBuildOrder(opponentSummaryPlayer.buildOrder) : [];
-
-                      // 双玩家时间轴组件
-                      const PlayerBuildOrder = ({ player, buildOrder, isCurrentPlayer }: { 
-                        player: any, 
-                        buildOrder: ParsedBuildOrderItem[], 
-                        isCurrentPlayer: boolean 
-                      }) => {
-                        // 按分钟分组
-                        const groupedByMinute: { [key: number]: ParsedBuildOrderItem[] } = {};
-                        buildOrder.forEach(item => {
-                          const minute = Math.floor(item.time / 60);
-                          if (!groupedByMinute[minute]) {
-                            groupedByMinute[minute] = [];
-                          }
-                          groupedByMinute[minute].push(item);
-                        });
-
-                        const minutes = Object.keys(groupedByMinute).map(Number).sort((a, b) => a - b);
-
-                        return (
-                          <View className="flex-1 mr-2">
-                            {/* 玩家头部 */}
-                            <View className={`flex-row items-center p-3 rounded-t-2xl ${
-                              isCurrentPlayer ? 'bg-blue-500' : 'bg-red-500'
-                            }`}>
-                              <View className={`w-3 h-3 rounded-full mr-2 ${
-                                player.result === 'win' ? 'bg-green-400' : 'bg-gray-300'
-                              }`} />
-                              <Text className="text-white font-bold text-base flex-1">{player.name}</Text>
-                              <Text className="text-white/80 text-xs">
-                                {getCivilizationInfo(player.civilization).name}
-                              </Text>
-                            </View>
-
-                            {/* Build Order 列表 */}
-                            <ScrollView 
-                              className="bg-white/95 rounded-b-2xl"
-                              style={{ maxHeight: 400 }}
-                              showsVerticalScrollIndicator={false}
-                              nestedScrollEnabled={true}
-                            >
-                              {buildOrder.length === 0 ? (
-                                <View className="p-4 text-center">
-                                  <Text className="text-gray-500 text-sm">暂无 Build Order 数据</Text>
-                                </View>
-                              ) : (
-                                minutes.map(minute => (
-                                <View key={minute} className="border-b border-gray-100">
-                                  {/* 时间标签 */}
-                                  <View className={`px-3 py-2 ${
-                                    isCurrentPlayer ? 'bg-blue-50' : 'bg-red-50'
-                                  }`}>
-                                    <Text className="font-semibold text-gray-700 text-sm">
-                                      {minute}:00 - {minute}:59
-                                    </Text>
-                                  </View>
-                                  
-                                  {/* 该分钟内的建造项目 */}
-                                  {groupedByMinute[minute].map((item, index) => (
-                                    <View key={`${item.id}-${item.time}-${index}`} 
-                                          className={`flex-row items-center p-2 border-l-2 ${
-                                            item.type === 'Unit' ? 'border-amber-500' :
-                                            item.type === 'Building' ? 'border-blue-500' :
-                                            item.type === 'Upgrade' ? 'border-purple-500' :
-                                            item.type === 'Age' ? 'border-orange-500' : 'border-gray-500'
-                                          }`}>
-                                                                             <Text className="text-xs font-mono text-gray-500 w-10 text-right">
-                                         {Math.floor(item.time / 60)}:{(item.time % 60).toString().padStart(2, '0')}
-                                       </Text>
-                                      <View className="w-6 h-6 mx-2 rounded overflow-hidden">
-                                        <Image 
-                                          source={{ uri: item.iconUrl }}
-                                          className="w-full h-full"
-                                          style={{ 
-                                            backgroundColor: getTypeColor(item.type),
-                                            borderRadius: 4
-                                          }}
-                                          resizeMode="cover"
-                                        />
-                                      </View>
-                                                                             <Text className="flex-1 text-xs text-gray-800">{item.name}</Text>
-                                       {(item.count && item.count > 1) && (
-                                         <Text className="text-xs text-gray-500 ml-1">×{item.count}</Text>
-                                       )}
-                                    </View>
-                                  ))}
-                                </View>
-                              ))
-                              )}
-                            </ScrollView>
-                          </View>
-                        );
-                      };
-
-                      return (
-                        <View className="bg-white/95 rounded-3xl p-6 mb-4">
-                          <View className="flex-row items-center justify-between mb-6">
-                            <Text className="text-xl font-bold text-gray-800">🏗️ Build Order</Text>
-                            <Text className="text-sm text-gray-500">完整时间轴</Text>
-                          </View>
-
-                          {/* 双玩家对比 */}
-                          <View className="flex-row">
-                            <PlayerBuildOrder 
-                              player={currentSummaryPlayer}
-                              buildOrder={currentBuildOrder}
-                              isCurrentPlayer={true}
-                            />
-                            <PlayerBuildOrder 
-                              player={opponentSummaryPlayer}
-                              buildOrder={opponentBuildOrder}
-                              isCurrentPlayer={false}
-                            />
-                          </View>
-
-                          {/* 类型图例 */}
-                          <View className="mt-4 pt-4 border-t border-gray-200">
-                            <Text className="text-sm font-medium text-gray-700 mb-2">类型图例</Text>
-                            <View className="flex-row flex-wrap gap-3">
-                              <View className="flex-row items-center">
-                                <View className="w-4 h-4 bg-amber-500 rounded mr-1 items-center justify-center">
-                                  <FontAwesome5 name="user" size={8} color="white" />
-                                </View>
-                                <Text className="text-xs text-gray-600">单位</Text>
-                              </View>
-                              <View className="flex-row items-center">
-                                <View className="w-4 h-4 bg-blue-500 rounded mr-1 items-center justify-center">
-                                  <FontAwesome5 name="building" size={8} color="white" />
-                                </View>
-                                <Text className="text-xs text-gray-600">建筑</Text>
-                              </View>
-                              <View className="flex-row items-center">
-                                <View className="w-4 h-4 bg-purple-500 rounded mr-1 items-center justify-center">
-                                  <FontAwesome5 name="arrow-up" size={8} color="white" />
-                                </View>
-                                <Text className="text-xs text-gray-600">升级</Text>
-                              </View>
-                              <View className="flex-row items-center">
-                                <View className="w-4 h-4 bg-orange-500 rounded mr-1 items-center justify-center">
-                                  <FontAwesome5 name="crown" size={8} color="white" />
-                                </View>
-                                <Text className="text-xs text-gray-600">时代</Text>
-                              </View>
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })()}
                   </ScrollView>
                 );
               })()}
