@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,34 @@ interface SearchResultsProps {
   isLoading: boolean;
   onSelectPlayer: (player: SearchResult) => void;
   onBack: () => void;
+}
+
+// 安全的头像组件，带错误处理
+function PlayerAvatar({ uri, size = 56 }: { uri: string; size?: number }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError || !uri) {
+    return (
+      <View 
+        className="rounded-xl bg-white/10 border border-white/20 items-center justify-center"
+        style={{ width: size, height: size, borderRadius: size / 4.67 }}
+      >
+        <FontAwesome5 name="user" size={size / 2.3} color="#a1a1aa" />
+      </View>
+    );
+  }
+
+  return (
+    <Image 
+      source={{ uri }}
+      className="rounded-xl border border-white/20"
+      style={{ width: size, height: size, borderRadius: size / 4.67 }}
+      onError={() => {
+        console.log('头像加载失败:', uri);
+        setImageError(true);
+      }}
+    />
+  );
 }
 
 export function SearchResults({ 
@@ -90,11 +118,7 @@ export function SearchResults({
                     {/* 玩家头像 */}
                     <View className="relative mr-5">
                       {player.avatars?.medium ? (
-                        <Image 
-                          source={{ uri: player.avatars.medium }}
-                          className="w-14 h-14 rounded-xl border border-white/20"
-                          style={{ width: 56, height: 56, borderRadius: 12 }}
-                        />
+                        <PlayerAvatar uri={player.avatars.medium} size={56} />
                       ) : (
                         <View className="w-14 h-14 rounded-xl bg-white/10 border border-white/20 items-center justify-center">
                           <FontAwesome5 name="user" size={24} color="#a1a1aa" />
