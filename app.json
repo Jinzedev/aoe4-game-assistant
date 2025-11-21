@@ -9,7 +9,9 @@
     "experiments": {
       "tsconfigPaths": true
     },
-    "plugins": [],
+    "plugins": [
+      "expo-asset"
+    ],
     "orientation": "portrait",
     "icon": "./assets/aoe4.png",
     "userInterfaceStyle": "light",
