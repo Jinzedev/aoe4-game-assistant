@@ -19,3 +19,4 @@ web-build/
 # iOS and Android builds
 ios
 android
+game_data.json
