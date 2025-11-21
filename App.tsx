@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StatsScreen } from './components/StatsScreen';
-import { HistoryScreen } from './components/HistoryScreen';
-import { SearchScreen } from './components/SearchScreen';
-import { SettingsScreen } from './components/SettingsScreen';
-import { HomeScreen } from './components/HomeScreen';
+import { StatsScreen } from './screens/StatsScreen';
+import { HistoryScreen } from './screens/HistoryScreen';
+import { SearchScreen } from './screens/SearchScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { HomeScreen } from './screens/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
 import { BottomNavigation } from './components/BottomNavigation';
 import { GameDetailScreen } from './components/GameDetailScreen';
