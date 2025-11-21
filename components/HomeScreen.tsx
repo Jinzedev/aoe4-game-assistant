@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, AppState } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, AppState, AppStateStatus } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GameRecord } from './GameRecord';
@@ -40,14 +40,45 @@ function SkeletonLoader() {
   );
 }
 
+// 安全的头像组件，带错误处理
+function PlayerAvatar({ uri, size = 64 }: { uri: string; size?: number }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError || !uri) {
+    return (
+      <View 
+        className="bg-gray-400 rounded-2xl border-2 border-white/20 flex items-center justify-center"
+        style={{ width: size, height: size, borderRadius: size / 4 }}
+      >
+        <FontAwesome5 name="user" size={size / 2.5} color="#ffffff" />
+      </View>
+    );
+  }
+
+  return (
+    <Image 
+      source={{ uri }}
+      className="rounded-2xl border-2 border-white/20"
+      style={{ width: size, height: size, borderRadius: size / 4 }}
+      onError={() => {
+        console.log('头像加载失败:', uri);
+        setImageError(true);
+      }}
+      defaultSource={require('../assets/aoe4.png')}
+    />
+  );
+}
+
 interface HomeScreenProps {
   boundPlayerData?: SearchResult;
   onShowBinding: () => void;
   onUnbind?: () => void;
   onViewAllGames?: () => void; // 新增：查看全部游戏的回调
+  onViewGameDetail?: (gameId: string) => void; // 新增：查看游戏详情的回调
+  onRefreshPlayerData?: () => Promise<SearchResult | null>; // 新增：刷新玩家信息
 }
 
-export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAllGames }: HomeScreenProps) {
+export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAllGames, onViewGameDetail, onRefreshPlayerData }: HomeScreenProps) {
   const [monthlyStats, setMonthlyStats] = React.useState<MonthlyStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = React.useState(false);
   const [recentGames, setRecentGames] = React.useState<any[]>([]);
@@ -55,6 +86,45 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
   const [isLoadingGames, setIsLoadingGames] = React.useState(false);
   // 筛选相关状态
   const [selectedFilter, setSelectedFilter] = React.useState('all'); // all, 1v1, team, thisWeek, wins, losses
+  // 段位展示模式：1v1 / 组队 / 快速等
+  const [selectedMode, setSelectedMode] = React.useState<'rm_solo' | 'rm_team' | 'qm_4v4'>('rm_solo');
+
+  // ===== 进入应用 / 回到前台时自动刷新玩家基础信息（带节流） =====
+  const hasInitialRefreshedRef = useRef(false);
+
+  React.useEffect(() => {
+    if (!onRefreshPlayerData) return;
+
+    // 进入 HomeScreen 时只刷新一次
+    if (!hasInitialRefreshedRef.current) {
+      hasInitialRefreshedRef.current = true;
+      console.log('🔄 [HomeScreen] 首次进入首页，尝试刷新玩家信息');
+      onRefreshPlayerData().catch(err => {
+        console.error('❌ [HomeScreen] 首次刷新玩家信息失败:', err);
+      });
+    }
+
+    // 监听 AppState，当应用从后台回到前台时再次刷新
+    const currentStateRef: { value: AppStateStatus } = { value: AppState.currentState };
+
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      const prevState = currentStateRef.value;
+      currentStateRef.value = nextState;
+
+      if ((prevState === 'inactive' || prevState === 'background') && nextState === 'active') {
+        console.log('🔄 [HomeScreen] 应用回到前台，自动刷新玩家信息');
+        onRefreshPlayerData().catch(err => {
+          console.error('❌ [HomeScreen] 前台刷新玩家信息失败:', err);
+        });
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [onRefreshPlayerData]);
 
   // 🔥 获取本月表现数据
   React.useEffect(() => {
@@ -293,6 +363,37 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
 
   // 如果没有绑定账户，显示骨架屏状态
   const showSkeleton = !boundPlayerData;
+  
+  // 根据当前选中的模式从 leaderboards 中取对应数据
+  const getCurrentModeEntry = () => {
+    const lb = boundPlayerData?.leaderboards;
+    if (!lb) return undefined;
+
+    switch (selectedMode) {
+      case 'rm_solo':
+        return lb.rm_solo;
+      case 'rm_team':
+        return lb.rm_team;
+      case 'qm_4v4':
+        return lb.qm_4v4;
+      default:
+        return lb.rm_solo;
+    }
+  };
+
+  // 自动选择一个最合适的默认模式（优先 1v1，其次组队，再到 QM 4v4）
+  React.useEffect(() => {
+    if (!boundPlayerData?.leaderboards) return;
+    const lb = boundPlayerData.leaderboards;
+
+    if (lb.rm_solo) {
+      setSelectedMode('rm_solo');
+    } else if (lb.rm_team) {
+      setSelectedMode('rm_team');
+    } else if (lb.qm_4v4) {
+      setSelectedMode('qm_4v4');
+    }
+  }, [boundPlayerData]);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -332,11 +433,7 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                 <View className="flex-row items-center mb-6">
                   <View className="relative mr-6">
                     {boundPlayerData.avatars?.medium ? (
-                      <Image 
-                        source={{ uri: boundPlayerData.avatars.medium }}
-                        className="w-16 h-16 rounded-2xl border-2 border-white/20"
-                        style={{ width: 64, height: 64, borderRadius: 16 }}
-                      />
+                      <PlayerAvatar uri={boundPlayerData.avatars.medium} size={64} />
                     ) : (
                       <View className="w-16 h-16 bg-gray-400 rounded-2xl border-2 border-white/20 flex items-center justify-center">
                         <FontAwesome5 name="user" size={24} color="#ffffff" />
@@ -352,18 +449,50 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                   </View>
                   <View className="flex-1">
                     <Text className="text-xl font-bold text-white mb-3">{boundPlayerData.name}</Text>
-                    <View className="flex-row items-center">
-                      <View className="bg-purple-400 px-3 py-1 rounded-full mr-3">
-                        <Text className="text-xs font-semibold text-white">
-                          {boundPlayerData.leaderboards.rm_solo ? 
-                            `${getRankIcon(boundPlayerData.leaderboards.rm_solo.rank_level)} ${formatRankLevel(boundPlayerData.leaderboards.rm_solo.rank_level)}` : 
-                            '❓ 未知段位'
-                          }
+                    
+                    {/* 段位行 + 模式切换 */}
+                    <View className="mb-2">
+                      <View className="flex-row items-center mb-2">
+                        <View className="bg-purple-400 px-3 py-1 rounded-full mr-3">
+                          <Text className="text-xs font-semibold text-white">
+                            {getCurrentModeEntry() ? 
+                              `${getRankIcon(getCurrentModeEntry()!.rank_level)} ${formatRankLevel(getCurrentModeEntry()!.rank_level)}` : 
+                              '❓ 未知段位'
+                            }
+                          </Text>
+                        </View>
+                        <Text className="text-white/60 text-sm">
+                          #{getCurrentModeEntry()?.rank || '---'}
                         </Text>
                       </View>
-                      <Text className="text-white/60 text-sm">
-                        #{boundPlayerData.leaderboards.rm_solo?.rank || '---'}
-                      </Text>
+
+                      {/* 模式切换 pill 按钮 */}
+                      <View className="flex-row bg-white/5 rounded-full px-1 py-1 self-start">
+                        <TouchableOpacity
+                          onPress={() => setSelectedMode('rm_solo')}
+                          className={`px-3 py-1 rounded-full mr-1 ${selectedMode === 'rm_solo' ? 'bg-white/80' : 'bg-transparent'}`}
+                        >
+                          <Text className={`text-[11px] font-medium ${selectedMode === 'rm_solo' ? 'text-purple-700' : 'text-white/60'}`}>
+                            1v1 排位
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setSelectedMode('rm_team')}
+                          className={`px-3 py-1 rounded-full mr-1 ${selectedMode === 'rm_team' ? 'bg-white/80' : 'bg-transparent'}`}
+                        >
+                          <Text className={`text-[11px] font-medium ${selectedMode === 'rm_team' ? 'text-purple-700' : 'text-white/60'}`}>
+                            组队排位
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setSelectedMode('qm_4v4')}
+                          className={`px-3 py-1 rounded-full ${selectedMode === 'qm_4v4' ? 'bg-white/80' : 'bg-transparent'}`}
+                        >
+                          <Text className={`text-[11px] font-medium ${selectedMode === 'qm_4v4' ? 'text-purple-700' : 'text-white/60'}`}>
+                            4v4 快速
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -372,8 +501,8 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                 <View className="flex-row">
                   <View className="bg-white/10 rounded-2xl p-4 flex-1 mr-2">
                     <Text className="text-2xl font-bold text-white mb-1 text-center">
-                      {boundPlayerData.leaderboards.rm_solo ? 
-                        `${boundPlayerData.leaderboards.rm_solo.win_rate.toFixed(1)}%` : 
+                      {getCurrentModeEntry() ? 
+                        `${getCurrentModeEntry()!.win_rate.toFixed(1)}%` : 
                         '--'
                       }
                     </Text>
@@ -382,8 +511,8 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                       <View 
                         className="bg-emerald-500 h-1 rounded-full" 
                         style={{ 
-                          width: boundPlayerData.leaderboards.rm_solo ? 
-                            `${boundPlayerData.leaderboards.rm_solo.win_rate}%` : 
+                          width: getCurrentModeEntry() ? 
+                            `${getCurrentModeEntry()!.win_rate}%` : 
                             '0%' 
                         }} 
                       />
@@ -391,13 +520,13 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                   </View>
                   <View className="bg-white/10 rounded-2xl p-4 flex-1 mx-2">
                     <Text className="text-2xl font-bold text-white mb-1 text-center">
-                      {boundPlayerData.leaderboards.rm_solo?.games_count || '--'}
+                      {getCurrentModeEntry()?.games_count || '--'}
                     </Text>
                     <Text className="text-white/60 text-xs text-center">总场次</Text>
                   </View>
                   <View className="bg-white/10 rounded-2xl p-4 flex-1 ml-2">
                     <Text className="text-2xl font-bold text-white mb-1 text-center">
-                      {boundPlayerData.leaderboards.rm_solo?.rating || '--'}
+                      {getCurrentModeEntry()?.rating || '--'}
                     </Text>
                     <Text className="text-white/60 text-xs text-center">ELO分数</Text>
                   </View>
@@ -647,25 +776,27 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
                       ))}
                     </>
                   ) : recentGames.length > 0 ? (
-                    recentGames.map((game, index) => (
-                      <GameRecord
-                        key={game.gameId}
-                        mapName={game.mapName}
-                        mapIcon="map"
-                        gameMode={game.gameMode}
-                        duration={game.duration}
-                        isWin={game.isWin}
-                        players={game.players}
-                        playerIcon="crown"
-                        opponents={game.opponents}
-                        opponentIcon={game.opponents[0]?.rating > game.players[0]?.rating ? "trophy" : "chess-rook"}
-                        eloChange={game.eloChange}
-                        timeAgo={game.timeAgo}
-                        mapIconColor={index % 3 === 0 ? "#16a34a" : index % 3 === 1 ? "#0ea5e9" : "#f59e0b"}
-                        playerIconColor="#eab308"
-                        opponentIconColor={game.opponents[0]?.rating > game.players[0]?.rating ? "#dc2626" : "#16a34a"}
-                      />
-                    ))
+                                         recentGames.map((game, index) => (
+                       <GameRecord
+                         key={game.gameId}
+                         gameId={game.gameId}
+                         mapName={game.mapName}
+                         mapIcon="map"
+                         gameMode={game.gameMode}
+                         duration={game.duration}
+                         isWin={game.isWin}
+                         players={game.players}
+                         playerIcon="crown"
+                         opponents={game.opponents}
+                         opponentIcon={game.opponents[0]?.rating > game.players[0]?.rating ? "trophy" : "chess-rook"}
+                         eloChange={game.eloChange}
+                         timeAgo={game.timeAgo}
+                         mapIconColor={index % 3 === 0 ? "#16a34a" : index % 3 === 1 ? "#0ea5e9" : "#f59e0b"}
+                         playerIconColor="#eab308"
+                         opponentIconColor={game.opponents[0]?.rating > game.players[0]?.rating ? "#dc2626" : "#16a34a"}
+                         onPress={() => onViewGameDetail?.(game.gameId)}
+                       />
+                     ))
                   ) : (
                     <View className="py-8 items-center">
                       <Text className="text-gray-500 text-sm">暂无对战记录</Text>
