@@ -4,111 +4,132 @@ interface CivilizationInfo {
   color: string;
 }
 
+const SUPABASE_CIV_BASE_URL = 'https://mydjgffyqobzvndmltzm.supabase.co/storage/v1/object/public/aoe4/aoe4_civs/';
+
 const civilizationMap: { [key: string]: CivilizationInfo } = {
   'abbasid_dynasty': {
-    name: '阿拔斯王朝',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/abbasid_dynasty-b722e3e4ee862226395c692e73cd14c18bc96c3469874d2e0d918305c70f8a69.png',
+    name: '黑衣大食王朝',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Abbasid-Dynasty.webp`,
     color: '#1a5490'
   },
   'ayyubids': {
-    name: '阿尤布王朝',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/ayyubids-9ba464806c83e293ac43e19e55dddb80f1fba7b7f5bcb6f7e53b48c4b9c83c9e.png',
+    name: '阿尤布',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Ayyubids.webp`,
     color: '#228b22'
   },
   'byzantine': {
     name: '拜占庭',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/byzantines-cfe0492a2ed33b486946a92063989a9500ae54d9301178ee55ba6b4d4c7ceb84.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Byzantines.webp`,
     color: '#800080'
   },
   'byzantines': {
     name: '拜占庭',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/byzantines-cfe0492a2ed33b486946a92063989a9500ae54d9301178ee55ba6b4d4c7ceb84.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Byzantines.webp`,
     color: '#800080'
   },
   'chinese': {
     name: '中国',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/chinese-2d4edb3d7fc7ab5e1e2df43bd644aba4d63992be5a2110ba3163a4907d0f3d4e.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Chinese.webp`,
     color: '#c41e3a'
   },
   'delhi_sultanate': {
     name: '德里苏丹国',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/delhi_sultanate-7f92025d0623b8e224533d9f28b9cd7c51a5ff416ef3edaf7cc3e948ee290708.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Delhi-Sultanate.webp`,
     color: '#ff6b35'
   },
   'english': {
     name: '英格兰',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/english-8c6c905d0eb11d6d314b9810b2a0b9c09eec69afb38934f55b329df36468daf2.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}English.webp`,
     color: '#c8102e'
   },
   'french': {
     name: '法兰西',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/french-c3474adb98d8835fb5a86b3988d6b963a1ac2a8327d136b11fb0fd0537b45594.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}French.webp`,
     color: '#002c84'
   },
   'holy_roman_empire': {
     name: '神圣罗马帝国',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/holy_roman_empire-fc0be4151234fc9ac8f83e10c83b4befe79f22f7a8f6ec1ff03745d61adddb4c.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Holy-Roman-Empire.webp`,
     color: '#ffcc02'
   },
   'house_of_lancaster': {
-    name: '兰开斯特家族',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/house_of_lancaster-4b590484b88bb49e122c8e7933913f35774fd4d2c5e1505fdc93b628da8b6174.png',
+    name: '兰开斯特王朝',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}House-of-Lancaster.webp`,
     color: '#dc143c'
   },
   'japanese': {
     name: '日本',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/japanese-16a9b5bae87a5494d5a002cf7a2c2c5de5cead128a965cbf3a89eeee8292b997.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Japanese.webp`,
     color: '#dc143c'
   },
   'jeanne_darc': {
     name: '圣女贞德',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/jeanne_darc-aeec47c19181d6af7b08a015e8a109853d7169d02494b25208d3581e38d022eb.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Jeanne-d%27Arc.webp`,
     color: '#4169e1'
   },
   'knights_templar': {
     name: '圣殿骑士团',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/knights_templar-0dc0979a16240ed364b6859ec9aef4cd53f059144ee45b6fd3ea7bfaea209b16.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Knights-Templar.webp`,
     color: '#ffffff'
   },
   'malians': {
     name: '马里',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/malians-edb6f54659da3f9d0c5c51692fd4b0b1619850be429d67dbe9c3a9d53ab17ddd.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Malians.webp`,
     color: '#ff8c00'
+  },
+  'golden_horde': {
+    name: '金帐汗国',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Golden-Horde.webp`,
+    color: '#d4af37'
+  },
+  'sengoku_daimyo': {
+    name: '战国大名',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Sengoku-Daimyo.webp`,
+    color: '#7c0a02'
+  },
+  'macedonian_dynasty': {
+    name: '马其顿王朝',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Macedonian-Dynasty.webp`,
+    color: '#1c3faa'
+  },
+  'tughlaq_dynasty': {
+    name: '图格鲁克王朝',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Tughlaq-Dynasty.webp`,
+    color: '#0a7f83'
   },
   'mongols': {
     name: '蒙古',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/mongols-7ce0478ab2ca1f95d0d879fecaeb94119629538e951002ac6cb936433c575105.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Mongols.webp`,
     color: '#8b4513'
   },
   'order_of_the_dragon': {
-    name: '龙骑士团',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/order_of_the_dragon-cad6fa9212fd59f9b52aaa83b4a6173f07734d38d37200f976bcd46827667424.png',
+    name: '龙之骑士团',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Order-of-the-Dragon.webp`,
     color: '#8b0000'
   },
   'ottomans': {
     name: '奥斯曼',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/ottomans-83c752dcbe46ad980f6f65dd719b060f8fa2d0707ab8e2ddb1ae5d468fc019a2.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Ottomans.webp`,
     color: '#e30613'
   },
   'rus': {
     name: '罗斯',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/rus-cb31fb6f8663187f63136cb2523422a07161c792de27852bdc37f0aa1b74911b.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Rus.webp`,
     color: '#ffd700'
   },
   'zhu_xis_legacy': {
-    name: '朱熹之学',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/zhu_xis_legacy-c4d119a5fc11f2355f41d206a8b65bea8bab2286d09523a81b7d662d1aad0762.png',
+    name: '朱子遗训',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Zhu-Xi-Legacy.webp`,
     color: '#ff4500'
   },
-  // 添加一些可能缺失的变体名称
   'japan': {
     name: '日本',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/japanese-16a9b5bae87a5494d5a002cf7a2c2c5de5cead128a965cbf3a89eeee8292b997.png',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Japanese.webp`,
     color: '#dc143c'
   },
   'dragon': {
-    name: '龙骑士团',
-    imageUrl: 'https://static.aoe4world.com/assets/flags/order_of_the_dragon-cad6fa9212fd59f9b52aaa83b4a6173f07734d38d37200f976bcd46827667424.png',
+    name: '龙之骑士团',
+    imageUrl: `${SUPABASE_CIV_BASE_URL}Order-of-the-Dragon.webp`,
     color: '#8b0000'
   }
 };
@@ -129,6 +150,7 @@ export function getCivilizationInfo(civilization: string): CivilizationInfo {
     // 中文名称映射到英文键
     const chineseToEnglish: { [key: string]: string } = {
       '龙骑士团': 'order_of_the_dragon',
+      '龙之骑士团': 'order_of_the_dragon',
       '日本': 'japanese',
       '中国': 'chinese',
       '英格兰': 'english',
@@ -136,6 +158,7 @@ export function getCivilizationInfo(civilization: string): CivilizationInfo {
       '神圣罗马帝国': 'holy_roman_empire',
       '德里苏丹国': 'delhi_sultanate',
       '阿拔斯王朝': 'abbasid_dynasty',
+      '黑衣大食王朝': 'abbasid_dynasty',
       '蒙古': 'mongols',
       '马里': 'malians',
       '奥斯曼': 'ottomans',
@@ -143,9 +166,19 @@ export function getCivilizationInfo(civilization: string): CivilizationInfo {
       '圣殿骑士团': 'knights_templar',
       '圣女贞德': 'jeanne_darc',
       '兰开斯特家族': 'house_of_lancaster',
+      '兰开斯特王朝': 'house_of_lancaster',
       '朱熹之学': 'zhu_xis_legacy',
+      '朱子遗训': 'zhu_xis_legacy',
       '拜占庭': 'byzantine',
-      '阿尤布王朝': 'ayyubids'
+      '阿尤布王朝': 'ayyubids',
+      '阿尤布': 'ayyubids',
+      '金帐汉国': 'golden_horde',
+      '金帐汗国': 'golden_horde',
+      '战国大名': 'sengoku_daimyo',
+      '马其顿': 'macedonian_dynasty',
+      '马其顿王朝': 'macedonian_dynasty',
+      '图格鲁克': 'tughlaq_dynasty',
+      '图格鲁克王朝': 'tughlaq_dynasty'
     };
     
     const chineseKey = chineseToEnglish[civilization];
@@ -182,7 +215,12 @@ export function getCivilizationInfo(civilization: string): CivilizationInfo {
       'joan': 'jeanne_darc',
       'lancaster': 'house_of_lancaster',
       'zhu xi': 'zhu_xis_legacy',
-      'zhu_xi': 'zhu_xis_legacy'
+      'zhu_xi': 'zhu_xis_legacy',
+      'golden horde': 'golden_horde',
+      'sengoku': 'sengoku_daimyo',
+      'daimyo': 'sengoku_daimyo',
+      'macedon': 'macedonian_dynasty',
+      'tughlaq': 'tughlaq_dynasty'
     };
     const aliasKey = aliases[civKey];
     if (aliasKey) {
