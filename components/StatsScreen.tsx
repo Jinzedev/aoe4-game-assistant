@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image, ImageSourcePropType, ActivityIndicator } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiService, StatsResponse, CivilizationStats, Game, MapStatsResponse, MapStats } from '../services/apiService';
@@ -9,6 +9,34 @@ import { StorageService } from '../services/storageService';
 import { SearchResult } from '../types';
 
 const { width } = Dimensions.get('window');
+
+// 安全的图片组件，带错误处理
+function SafeImage({ source, style, className, resizeMode, fallback }: { 
+  source: ImageSourcePropType; 
+  style?: any; 
+  className?: string;
+  resizeMode?: 'cover' | 'contain' | 'stretch' | 'center' | 'repeat';
+  fallback?: React.ReactNode;
+}) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError) {
+    return <>{fallback || <View style={style} className={className} />}</>;
+  }
+
+  return (
+    <Image
+      source={source}
+      style={style}
+      className={className}
+      resizeMode={resizeMode}
+      onError={() => {
+        console.log('图片加载失败');
+        setImageError(true);
+      }}
+    />
+  );
+}
 
 // 排行榜选项配置
 const LEADERBOARD_OPTIONS = [
@@ -43,6 +71,13 @@ const QM_RATING_OPTIONS = [
   { key: '1200-1299', name: '钻石', color: '#7c3aed' },
   { key: '>1300', name: '征服者', color: '#dc2626' },
 ];
+
+const PERSONAL_MODE_OPTIONS = [
+  { key: 'rm_solo', label: '1v1', description: '单人排位' },
+  { key: 'rm_team', label: '团队', description: '多人排位' },
+] as const;
+
+type PersonalMode = (typeof PERSONAL_MODE_OPTIONS)[number]['key'];
 
 interface CivilizationCardProps {
   civ: CivilizationStats;
@@ -84,10 +119,11 @@ function CivilizationCard({ civ, rank }: CivilizationCardProps) {
               style={{ borderWidth: 2, borderColor: '#e5e7eb' }}
             >
               {civImage ? (
-                <Image 
+                <SafeImage 
                   source={{ uri: civImage }}
                   className="w-full h-full"
                   resizeMode="cover"
+                  fallback={<FontAwesome5 name="chess-pawn" size={20} color="#6b7280" />}
                 />
               ) : (
                 <FontAwesome5 name="chess-pawn" size={20} color="#6b7280" />
@@ -154,6 +190,10 @@ export function StatsScreen() {
   const [boundPlayer, setBoundPlayer] = useState<SearchResult | null>(null);
   const [personalGames, setPersonalGames] = useState<Game[]>([]);
   const [personalCivStats, setPersonalCivStats] = useState<Map<string, {wins: number, total: number, winRate: number}>>(new Map());
+  const [personalLoading, setPersonalLoading] = useState(false);
+  const [personalMode, setPersonalMode] = useState<PersonalMode>('rm_solo');
+  const [personalStatsCache, setPersonalStatsCache] = useState<Record<string, { games: Game[], civStats: Map<string, {wins: number, total: number, winRate: number}> }>>({});
+  const personalModeRef = useRef<PersonalMode>('rm_solo');
 
   // 获取文明统计数据
   const fetchCivilizationStats = async () => {
@@ -272,7 +312,7 @@ export function StatsScreen() {
   };
 
   // 获取个人数据
-  const fetchPersonalData = async () => {
+  const fetchPersonalData = async (mode: PersonalMode) => {
     try {
       // 使用新的存储策略：获取玩家ID
       const playerId = await StorageService.getBoundPlayerId();
@@ -283,6 +323,10 @@ export function StatsScreen() {
       
       // 根据ID获取最新的玩家数据
       const latestPlayerData = await apiService.getPlayer(playerId);
+      
+      if (personalModeRef.current === mode) {
+        setPersonalLoading(true);
+      }
       
       // 构建 SearchResult 对象
       const player: SearchResult = {
@@ -300,10 +344,8 @@ export function StatsScreen() {
       // 获取最近的游戏记录（限制500场以避免API限制）
       const gameData = await apiService.getPlayerGames(player.profile_id, {
         limit: 500,
-        leaderboard: selectedLeaderboard.includes('rm_') ? selectedLeaderboard.replace('rm_', 'rm_') : selectedLeaderboard.replace('qm_', 'qm_')
+        leaderboard: mode
       });
-      
-      setPersonalGames(gameData.games);
       
       // 计算文明使用统计
       const civStatsMap = new Map<string, {wins: number, total: number, winRate: number}>();
@@ -327,11 +369,39 @@ export function StatsScreen() {
         }
       });
       
-      setPersonalCivStats(civStatsMap);
+      setPersonalStatsCache(prev => ({
+        ...prev,
+        [mode]: {
+          games: gameData.games,
+          civStats: civStatsMap
+        }
+      }));
+      
+      if (personalModeRef.current === mode) {
+        setPersonalGames(gameData.games);
+        setPersonalCivStats(civStatsMap);
+      }
       console.log('✅ 个人文明统计计算完成:', civStatsMap.size, '个文明');
       
     } catch (err) {
       console.error('❌ 获取个人数据失败:', err);
+    } finally {
+      if (personalModeRef.current === mode) {
+        setPersonalLoading(false);
+      }
+    }
+  };
+
+  const handlePersonalModeChange = (mode: PersonalMode) => {
+    if (mode === personalMode) return;
+    setPersonalMode(mode);
+    
+    const cached = personalStatsCache[mode];
+    if (cached) {
+      setPersonalGames(cached.games);
+      setPersonalCivStats(new Map(cached.civStats));
+    } else {
+      fetchPersonalData(mode);
     }
   };
 
@@ -345,17 +415,22 @@ export function StatsScreen() {
   useEffect(() => {
     fetchCivilizationStats();
     fetchMapData();
-    fetchPersonalData();
   }, [selectedLeaderboard, selectedRating, selectedMap]);
+
+  // 同步当前个人模式引用
+  useEffect(() => {
+    personalModeRef.current = personalMode;
+  }, [personalMode]);
 
   // 初始加载个人数据
   useEffect(() => {
-    fetchPersonalData();
+    fetchPersonalData(personalModeRef.current);
   }, []);
 
   // 按胜率排序文明数据
   const sortedCivs = statsData?.data ? 
     [...statsData.data].sort((a, b) => b.win_rate - a.win_rate) : [];
+  const currentPersonalMode = PERSONAL_MODE_OPTIONS.find(option => option.key === personalMode);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -383,12 +458,14 @@ export function StatsScreen() {
         <ScrollView className="px-6 flex-1" showsVerticalScrollIndicator={false}>
           
           {/* 个人文明使用情况 */}
-          {boundPlayer && personalCivStats.size > 0 && (
+          {boundPlayer && (
             <View className="bg-white/95 rounded-3xl p-6 mb-4">
               <View className="flex-row items-center justify-between mb-4">
                 <View>
                   <Text className="text-lg font-bold text-gray-800">我的文明使用情况</Text>
-                  <Text className="text-gray-500 text-sm">{boundPlayer.name}</Text>
+                  <Text className="text-gray-500 text-sm">
+                    {boundPlayer.name} · {(currentPersonalMode?.label || '1v1')}模式
+                  </Text>
                 </View>
                 <View className="bg-purple-100 rounded-full px-3 py-1">
                   <Text className="text-purple-700 font-medium text-sm">
@@ -396,83 +473,133 @@ export function StatsScreen() {
                   </Text>
                 </View>
               </View>
+
+              {/* 1v1 / 团队切换 */}
+              <View className="flex-row bg-white/70 rounded-2xl p-1 mb-4">
+                {PERSONAL_MODE_OPTIONS.map(option => {
+                  const modeKey = option.key as PersonalMode;
+                  const isActive = modeKey === personalMode;
+                  return (
+                    <TouchableOpacity
+                      key={modeKey}
+                      activeOpacity={0.85}
+                      onPress={() => handlePersonalModeChange(modeKey)}
+                      className="flex-1 rounded-2xl px-3 py-2"
+                      style={{
+                        backgroundColor: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
+                        borderWidth: isActive ? 1 : 0,
+                        borderColor: isActive ? 'rgba(99,102,241,0.35)' : 'transparent'
+                      }}
+                    >
+                      <Text
+                        className="text-center font-semibold"
+                        style={{ color: isActive ? '#7c3aed' : '#6b7280' }}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text
+                        className="text-center text-xs mt-1"
+                        style={{ color: isActive ? '#a855f7' : '#9ca3af' }}
+                      >
+                        {option.description}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
               
               {/* 文明使用统计 */}
-              <View className="space-y-3">
-                {Array.from(personalCivStats.entries())
-                  .sort(([,a], [,b]) => b.total - a.total) // 按使用次数排序
-                  .slice(0, 6) // 显示前6个文明
-                  .map(([civilization, stats], index) => {
-                    const civInfo = getCivilizationInfo(civilization);
-                    // 扩展的颜色方案：金蓝铜 + 紫色系
-                    const rankColors = [
-                      '#f59e0b', // 金色 - 第1名
-                      '#3b82f6', // 蓝色 - 第2名
-                      '#cd7f32', // 铜色 - 第3名
-                      '#8b5cf6', // 紫色 - 第4名
-                      '#06b6d4', // 青色 - 第5名
-                      '#10b981'  // 绿色 - 第6名
-                    ];
-                    const rankColor = rankColors[index] || '#6b7280';
-                    
-                    return (
-                      <View key={civilization} className="bg-gray-50 rounded-2xl p-4">
-                        <View className="flex-row items-center">
-                          {/* 排名徽章 */}
-                          <View 
-                            className="w-8 h-8 rounded-full items-center justify-center mr-3"
-                            style={{ backgroundColor: rankColor }}
-                          >
-                            <Text className="text-white font-bold text-sm">
-                              {index + 1}
-                            </Text>
-                          </View>
-                          
-                          {/* 文明图标 */}
-                          <Image 
-                            source={{ uri: civInfo.imageUrl }} 
-                            className="w-10 h-10 rounded-xl mr-3"
-                            resizeMode="cover"
-                          />
-                          
-                          {/* 文明信息 */}
-                          <View className="flex-1">
-                            <Text className="font-bold text-gray-800">
-                              {civInfo.name}
-                            </Text>
-                            <Text className="text-gray-600 text-sm">
-                              {stats.total}场 • {stats.wins}胜{stats.total - stats.wins}负
-                            </Text>
-                          </View>
-                          
-                          {/* 胜率 */}
-                          <View className="items-end">
-                            <Text 
-                              className="text-xl font-bold"
-                              style={{ color: rankColor }}
-                            >
-                              {stats.winRate.toFixed(1)}%
-                            </Text>
-                            <Text className="text-gray-500 text-xs">胜率</Text>
-                          </View>
-                        </View>
-                        
-                        {/* 胜率进度条 */}
-                        <View className="mt-3">
-                          <View className="w-full bg-gray-200 rounded-full h-2">
+              {personalLoading ? (
+                <View className="py-8 items-center justify-center">
+                  <ActivityIndicator size="small" color="#7c3aed" />
+                  <Text className="text-gray-500 text-sm mt-3">正在加载{currentPersonalMode?.label || '1v1'}数据...</Text>
+                </View>
+              ) : personalCivStats.size > 0 ? (
+                <View className="space-y-3">
+                  {Array.from(personalCivStats.entries())
+                    .sort(([,a], [,b]) => b.total - a.total) // 按使用次数排序
+                    .slice(0, 6) // 显示前6个文明
+                    .map(([civilization, stats], index) => {
+                      const civInfo = getCivilizationInfo(civilization);
+                      // 扩展的颜色方案：金蓝铜 + 紫色系
+                      const rankColors = [
+                        '#f59e0b', // 金色 - 第1名
+                        '#3b82f6', // 蓝色 - 第2名
+                        '#cd7f32', // 铜色 - 第3名
+                        '#8b5cf6', // 紫色 - 第4名
+                        '#06b6d4', // 青色 - 第5名
+                        '#10b981'  // 绿色 - 第6名
+                      ];
+                      const rankColor = rankColors[index] || '#6b7280';
+                      
+                      return (
+                        <View key={civilization} className="bg-gray-50 rounded-2xl p-4">
+                          <View className="flex-row items-center">
+                            {/* 排名徽章 */}
                             <View 
-                              className="h-2 rounded-full"
-                              style={{ 
-                                width: `${Math.min(stats.winRate, 100)}%`,
-                                backgroundColor: rankColor
-                              }}
+                              className="w-8 h-8 rounded-full items-center justify-center mr-3"
+                              style={{ backgroundColor: rankColor }}
+                            >
+                              <Text className="text-white font-bold text-sm">
+                                {index + 1}
+                              </Text>
+                            </View>
+                            
+                            {/* 文明图标 */}
+                            <SafeImage 
+                              source={{ uri: civInfo.imageUrl }} 
+                              className="w-10 h-10 rounded-xl mr-3"
+                              resizeMode="cover"
+                              fallback={<View className="w-10 h-10 rounded-xl mr-3 bg-gray-200 items-center justify-center"><FontAwesome5 name="flag" size={16} color="#6b7280" /></View>}
                             />
+                            
+                            {/* 文明信息 */}
+                            <View className="flex-1">
+                              <Text className="font-bold text-gray-800">
+                                {civInfo.name}
+                              </Text>
+                              <Text className="text-gray-600 text-sm">
+                                {stats.total}场 • {stats.wins}胜{stats.total - stats.wins}负
+                              </Text>
+                            </View>
+                            
+                            {/* 胜率 */}
+                            <View className="items-end">
+                              <Text 
+                                className="text-xl font-bold"
+                                style={{ color: rankColor }}
+                              >
+                                {stats.winRate.toFixed(1)}%
+                              </Text>
+                              <Text className="text-gray-500 text-xs">胜率</Text>
+                            </View>
+                          </View>
+                          
+                          {/* 胜率进度条 */}
+                          <View className="mt-3">
+                            <View className="w-full bg-gray-200 rounded-full h-2">
+                              <View 
+                                className="h-2 rounded-full"
+                                style={{ 
+                                  width: `${Math.min(stats.winRate, 100)}%`,
+                                  backgroundColor: rankColor
+                                }}
+                              />
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    );
-                  })}
-              </View>
+                      );
+                    })}
+                </View>
+              ) : (
+                <View className="py-10 items-center rounded-2xl bg-gray-50">
+                  <FontAwesome5 name="info-circle" size={20} color="#9ca3af" />
+                  <Text className="text-gray-500 text-sm mt-2">
+                    暂无{currentPersonalMode?.label || '1v1'}模式数据
+                  </Text>
+                  <Text className="text-gray-400 text-xs mt-1">去完成更多对局后再来看看吧</Text>
+                </View>
+              )}
               
               {/* 查看更多按钮 */}
               {personalCivStats.size > 6 && (
@@ -730,10 +857,11 @@ export function StatsScreen() {
                             }`}
                           >
                             {mapInfo.imageUrl ? (
-                              <Image 
+                              <SafeImage 
                                 source={{ uri: mapInfo.imageUrl }} 
                                 className="w-8 h-8 rounded-lg mr-3"
                                 resizeMode="cover"
+                                fallback={<View className="w-8 h-8 rounded-lg mr-3 bg-gray-200 items-center justify-center"><FontAwesome5 name="map" size={12} color="#6b7280" /></View>}
                               />
                             ) : (
                               <View 
