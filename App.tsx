@@ -8,7 +8,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { AccountBinding } from './components/AccountBinding';
 import { BottomNavigation } from './components/BottomNavigation';
-import { GameDetailScreen } from './components/GameDetailScreen';
+import { GameDetailScreen } from './screens/GameDetailScreen';
 
 import { SearchResult, SearchResultLeaderboardEntry } from './types';
 import StorageService from './services/storageService';
