@@ -263,11 +263,10 @@ export function HomeScreen({ boundPlayerData, onShowBinding, onUnbind, onViewAll
               />
 
               {/* 最近对战列表 (保持不变) */}
-              <View className="bg-white/95 rounded-[32px] p-5 mb-8 shadow-lg">
-                
-                {/* 1. 标题栏与查看全部 */}
-                <View className="flex-row items-center justify-between mb-5 px-1">
-                  <View>
+              <View className="bg-white/95 rounded-3xl p-6 mb-6 shadow-lg">
+                {/* 头部区域 */}
+                <View className="mb-6">
+                  <View className="flex-row items-center justify-between mb-4">
                     <Text className="text-xl font-extrabold text-slate-800">最近对战</Text>
                     <Text className="text-slate-400 text-xs font-medium mt-0.5">
                       {selectedFilter === 'all' ? `共${allGames.length}场记录` : `筛选显示`}
