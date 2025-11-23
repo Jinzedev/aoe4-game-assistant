@@ -5,7 +5,7 @@ export const APP_CONFIG = {
   GITEE_REPO: 'Jinze_JZ/aoe4-game-assistant', // Gitee仓库
   GITEA_URL: 'http://115.190.16.69:3000', // 您的Gitea服务器地址 - 简化部署
   GITEA_REPO: 'Jinzedev/aoe4-game-assistant', // Gitea仓库名（用户名/仓库名）
-  APP_NAME: 'AOE4游戏助手',
+  APP_NAME: '帝国侦察兵',
   QQ_GROUP: '741644137',
 } as const;
 
