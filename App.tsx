@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatsScreen } from './screens/StatsScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { SearchScreen } from './screens/SearchScreen';
@@ -240,60 +241,68 @@ export default function App() {
   // 应用启动加载状态
   if (isLoading) {
     return (
-      <View className="flex-1 bg-slate-900 items-center justify-center">
-        <StatusBar style="light" />
-        {/* 这里可以放一个启动画面或加载指示器 */}
-      </View>
+      <SafeAreaProvider>
+        <View className="flex-1 bg-slate-900 items-center justify-center">
+          <StatusBar style="light" />
+          {/* 这里可以放一个启动画面或加载指示器 */}
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // 如果正在显示绑定页面
   if (showBindingPage) {
     return (
-      <View className="flex-1 bg-slate-900">
-        <StatusBar style="light" />
-        <AccountBinding onBind={handleAccountBind} onBack={handleBackFromBinding} />
-      </View>
+      <SafeAreaProvider>
+        <View className="flex-1 bg-slate-900">
+          <StatusBar style="light" />
+          <AccountBinding onBind={handleAccountBind} onBack={handleBackFromBinding} />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // 如果正在显示游戏详情页面
   if (showGameDetail && gameDetailData) {
     return (
-      <View className="flex-1 bg-slate-900">
-        <StatusBar style="light" />
-        <GameDetailScreen 
-          gameId={gameDetailData.gameId}
-          profileId={gameDetailData.profileId}
-          onBack={handleBackFromGameDetail}
-        />
-      </View>
+      <SafeAreaProvider>
+        <View className="flex-1 bg-slate-900">
+          <StatusBar style="light" />
+          <GameDetailScreen 
+            gameId={gameDetailData.gameId}
+            profileId={gameDetailData.profileId}
+            onBack={handleBackFromGameDetail}
+          />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
 
 
   return (
-    <View className="flex-1 bg-slate-900">
-      <StatusBar style="light" />
-      <View className="flex-1">
-        {activeTab === 'home' && (
-          <HomeScreen 
-            boundPlayerData={boundPlayerData} 
-            onShowBinding={handleShowBinding} 
-            onUnbind={handleAccountUnbind} 
-            onViewAllGames={() => setActiveTab('history')}
-            onViewGameDetail={handleShowGameDetailFromHome}
-            // 传入刷新函数，供 HomeScreen 在「进入应用 / 回到前台」时自动刷新
-            onRefreshPlayerData={refreshPlayerData}
-          />
-        )}
-        {activeTab === 'stats' && <StatsScreen />}
-        {activeTab === 'search' && <SearchScreen onViewPlayerHistory={handleViewPlayerHistory} />}
-        {activeTab === 'settings' && <SettingsScreen />}
-        {activeTab === 'history' && <HistoryScreen boundPlayerData={viewingPlayerData || boundPlayerData} onShowGameDetail={handleShowGameDetail} />}
-        <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />
+    <SafeAreaProvider>
+      <View className="flex-1 bg-slate-900">
+        <StatusBar style="light" />
+        <View className="flex-1">
+          {activeTab === 'home' && (
+            <HomeScreen 
+              boundPlayerData={boundPlayerData} 
+              onShowBinding={handleShowBinding} 
+              onUnbind={handleAccountUnbind} 
+              onViewAllGames={() => setActiveTab('history')}
+              onViewGameDetail={handleShowGameDetailFromHome}
+              // 传入刷新函数，供 HomeScreen 在「进入应用 / 回到前台」时自动刷新
+              onRefreshPlayerData={refreshPlayerData}
+            />
+          )}
+          {activeTab === 'stats' && <StatsScreen />}
+          {activeTab === 'search' && <SearchScreen onViewPlayerHistory={handleViewPlayerHistory} />}
+          {activeTab === 'settings' && <SettingsScreen />}
+          {activeTab === 'history' && <HistoryScreen boundPlayerData={viewingPlayerData || boundPlayerData} onShowGameDetail={handleShowGameDetail} />}
+          <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />
+        </View>
       </View>
-    </View>
+    </SafeAreaProvider>
   );
 }
