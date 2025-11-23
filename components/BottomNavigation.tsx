@@ -27,8 +27,9 @@ export function BottomNavigation({ activeTab, onTabPress }: BottomNavigationProp
           >
             <FontAwesome5 
               name={tab.icon as any} 
-              size={18} 
+              size={20} // 稍微调大一点点，视觉效果更好
               color={activeTab === tab.key ? '#7c3aed' : '#9ca3af'} 
+              solid // 👈 关键修改：添加这个属性！
             />
             <Text 
               className={`text-xs mt-1 ${activeTab === tab.key ? 'text-purple-600 font-medium' : 'text-gray-400'}`}
@@ -40,4 +41,4 @@ export function BottomNavigation({ activeTab, onTabPress }: BottomNavigationProp
       </View>
     </View>
   );
-} 
+}
