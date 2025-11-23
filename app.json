@@ -2,7 +2,7 @@
   "expo": {
     "name": "AOE4游戏助手",
     "slug": "aoe4-game-assistant",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "web": {
       "favicon": "./assets/aoe4.png"
     },
@@ -10,7 +10,8 @@
       "tsconfigPaths": true
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ],
     "orientation": "portrait",
     "icon": "./assets/aoe4.png",

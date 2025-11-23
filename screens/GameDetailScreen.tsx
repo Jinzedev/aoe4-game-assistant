@@ -64,7 +64,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaProvider>
       {/* ✅ 2. 设置状态栏样式：style="light" 表示白色文字，backgroundColor 设为深色(Android) */}
-      <StatusBar style="light" backgroundColor="#0f172a" />
+      <StatusBar style="light"  />
       
       <SafeAreaView 
         style={{ flex: 1, backgroundColor: '#0f172a' }} // ✅ 3. 确保安全区域背景也是深色
