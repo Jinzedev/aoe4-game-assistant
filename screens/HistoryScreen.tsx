@@ -1,30 +1,38 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-// 替换旧的 GameRecord 导入
-import { ModernGameCard } from '../components/MatchCard'; 
-import { FilterPill } from '../components/FilterPill'; // 使用统一的筛选组件
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { SearchResult } from '../types';
+// Context & Types
+import { usePlayer } from '../context/PlayerContext';
+import { RootStackParamList, MainTabParamList } from '../navigation/types';
 import { apiService } from '../services/apiService';
 
-interface HistoryScreenProps {
-  boundPlayerData?: SearchResult;
-  // 保持 onShowGameDetail 接口不变，因为 MatchCard 仍需调用它
-  onShowGameDetail?: (gameId: number, profileId: number) => void; 
-}
+// Components
+import { ModernGameCard } from '../components/home/MatchCard';
+import { FilterPill } from '../components/home/FilterPill';
 
-export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScreenProps) {
-  const [allGames, setAllGames] = React.useState<any[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [selectedFilter, setSelectedFilter] = React.useState('all'); // all, 1v1, team, wins, losses
+type HistoryRouteProp = RouteProp<MainTabParamList, 'History'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+export function HistoryScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<HistoryRouteProp>();
+  const { boundPlayer } = usePlayer();
 
-  // 获取历史游戏数据 (保持不变)
-  React.useEffect(() => {
+  // 优先使用路由参数传来的 player (查看他人)，否则使用绑定的 player (查看自己)
+  const targetPlayer = route.params?.targetPlayer || boundPlayer;
+
+  const [allGames, setAllGames] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+
+  // 获取历史游戏数据
+  useEffect(() => {
     const fetchAllGames = async () => {
-      if (!boundPlayerData) {
+      if (!targetPlayer) {
         setAllGames([]);
         return;
       }
@@ -32,25 +40,22 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
       setIsLoading(true);
       try {
         // 获取更多历史游戏记录
-        const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
-          limit: 100 // 获取更多历史记录
+        const gamesResponse = await apiService.getPlayerGames(targetPlayer.profile_id, {
+          limit: 100 
         });
         
-        // 转换为UI需要的格式
         const formattedGames = gamesResponse.games
           .filter(game => game.teams && game.teams.length > 0)
           .map(game => {
-            // 找到玩家所在的团队和对手团队
             let playerData = null;
             let playerTeam = null;
             let opponentTeam = null;
             
-            // 遍历所有团队找到玩家
             for (let teamIndex = 0; teamIndex < game.teams.length; teamIndex++) {
               const team = game.teams[teamIndex];
               if (Array.isArray(team)) {
                 for (const playerWrapper of team) {
-                  if (playerWrapper.player.profile_id === boundPlayerData.profile_id) {
+                  if (playerWrapper.player.profile_id === targetPlayer.profile_id) {
                     playerData = playerWrapper.player;
                     playerTeam = team;
                     opponentTeam = game.teams[1 - teamIndex];
@@ -61,7 +66,6 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
               }
             }
             
-            // 如果找不到玩家数据或对手数据，则跳过
             if (!playerData || !opponentTeam) return null;
             
             const isWin = playerData.result === 'win';
@@ -73,7 +77,6 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
             const now = new Date();
             const diffTime = Math.abs(now.getTime() - gameDate.getTime());
             
-            // 计算更精确的时间差
             const diffMinutes = Math.floor(diffTime / (1000 * 60));
             const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -99,13 +102,8 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
               }
             }
             
-            // 判断是否为无效对局
-            const isInvalidGame = (
-              (game.duration && game.duration < 300) || 
-              playerData.result === null
-            );
+            const isInvalidGame = ((game.duration && game.duration < 300) || playerData.result === null);
             
-            // 格式化游戏模式
             let gameMode = 'RM 1v1';
             if (game.kind) {
               if (game.kind.includes('1v1')) gameMode = 'RM 1v1';
@@ -124,7 +122,6 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
               gameMode += ' (Invalid)';
             }
             
-            // 构建玩家和对手数据
              const players = playerTeam ? playerTeam.map((p: any) => ({
                name: p.player.name,
                rating: p.player.rating || 0,
@@ -137,10 +134,9 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
                civilization: p.player.civilization
              })) : [];
 
-             // 构造与 MatchCard 兼容的对象
              return {
-               gameId: game.game_id || Math.random().toString(), // 用于 key
-               realGameId: game.game_id, // 真实 ID 用于详情页
+               gameId: game.game_id || Math.random().toString(), 
+               realGameId: game.game_id, 
                mapName: game.map || 'Unknown',
                gameMode,
                duration,
@@ -151,8 +147,8 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
                timeAgo,
                startedAt: game.started_at,
                isTeamGame: playerTeam ? playerTeam.length > 1 : false,
-               civilization: playerData.civilization, // MatchCard 需要
-               opponentCivilization: opponents[0]?.civilization, // MatchCard 需要
+               civilization: playerData.civilization,
+               opponentCivilization: opponents[0]?.civilization,
              };
           })
           .filter(game => game !== null);
@@ -167,28 +163,23 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
     };
 
     fetchAllGames();
-  }, [boundPlayerData]);
+  }, [targetPlayer]);
 
-  // 筛选游戏 (保持不变)
-  const filteredGames = React.useMemo(() => {
+  // 筛选游戏
+  const filteredGames = useMemo(() => {
     return allGames.filter(game => {
       switch (selectedFilter) {
-        case '1v1':
-          return !game.isTeamGame;
-        case 'team':
-          return game.isTeamGame;
-        case 'wins':
-          return game.isWin;
-        case 'losses':
-          return !game.isWin;
-        default:
-          return true;
+        case '1v1': return !game.isTeamGame;
+        case 'team': return game.isTeamGame;
+        case 'wins': return game.isWin;
+        case 'losses': return !game.isWin;
+        default: return true;
       }
     });
   }, [allGames, selectedFilter]);
 
-  // 按日期分组游戏 (保持不变)
-  const groupedGames = React.useMemo(() => {
+  // 分组游戏
+  const groupedGames = useMemo(() => {
     const groups: { [key: string]: any[] } = {};
     
     filteredGames.forEach(game => {
@@ -209,40 +200,31 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
       if (!groups[groupKey]) {
         groups[groupKey] = [];
       }
-      // 将真实游戏 ID 转换为数字，因为 onShowGameDetail 接口需要 number
       groups[groupKey].push({ ...game, realGameId: Number(game.realGameId) });
     });
     
     return groups;
   }, [filteredGames]);
 
-  // 处理游戏详情查看
+  // 跳转详情
   const handleGamePress = (game: any) => {
-    // 使用 realGameId，确保它是 number 类型
-    if (onShowGameDetail && boundPlayerData?.profile_id && game.realGameId) {
-      onShowGameDetail(game.realGameId, boundPlayerData.profile_id);
-    } else {
-      console.log('无法打开游戏详情:', { 
-        hasCallback: !!onShowGameDetail, 
-        profileId: boundPlayerData?.profile_id, 
-        gameId: game.realGameId 
+    if (targetPlayer?.profile_id && game.realGameId) {
+      navigation.navigate('GameDetail', {
+        gameId: game.realGameId,
+        profileId: targetPlayer.profile_id
       });
     }
   };
 
   return (
     <View className="flex-1 bg-slate-900">
-      <LinearGradient
-        colors={['#0f172a', '#581c87', '#0f172a']}
-        className="flex-1"
-      >
-        {/* 头部 (保持不变) */}
+      <LinearGradient colors={['#0f172a', '#581c87', '#0f172a']} className="flex-1">
         <View className="px-6 pb-4 pt-10">
             <View>
               <Text className="text-2xl font-bold text-white">对战历史</Text>
-            {boundPlayerData ? (
+            {targetPlayer ? (
               <Text className="text-white/60">
-                {boundPlayerData.name} 的征战历程
+                {targetPlayer.name} 的征战历程
               </Text>
             ) : (
               <Text className="text-white/60">回顾你的征战历程</Text>
@@ -250,57 +232,21 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
           </View>
         </View>
 
-        {/* 筛选器 - 使用 FilterPill 组件 */}
         <View className="px-6 pb-4">
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 20 }}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
             <View className="flex-row space-x-2">
-              <FilterPill 
-                label={`全部 (${filteredGames.length})`} 
-                value="all" 
-                onSelect={setSelectedFilter} 
-                isSelected={selectedFilter === 'all'} 
-              />
-              <FilterPill 
-                label="1v1" 
-                value="1v1" 
-                onSelect={setSelectedFilter} 
-                isSelected={selectedFilter === '1v1'} 
-              />
-              <FilterPill 
-                label="团队" 
-                value="team" 
-                onSelect={setSelectedFilter} 
-                isSelected={selectedFilter === 'team'} 
-              />
-              <FilterPill 
-                label="胜利" 
-                value="wins" 
-                icon="trophy" 
-                color="#10b981" 
-                onSelect={setSelectedFilter} 
-                isSelected={selectedFilter === 'wins'} 
-              />
-              <FilterPill 
-                label="失败" 
-                value="losses" 
-                icon="times" 
-                color="#ef4444" 
-                onSelect={setSelectedFilter} 
-                isSelected={selectedFilter === 'losses'} 
-              />
+              <FilterPill label={`全部 (${filteredGames.length})`} value="all" onSelect={setSelectedFilter} isSelected={selectedFilter === 'all'} />
+              <FilterPill label="1v1" value="1v1" onSelect={setSelectedFilter} isSelected={selectedFilter === '1v1'} />
+              <FilterPill label="团队" value="team" onSelect={setSelectedFilter} isSelected={selectedFilter === 'team'} />
+              <FilterPill label="胜利" value="wins" icon="trophy" color="#10b981" onSelect={setSelectedFilter} isSelected={selectedFilter === 'wins'} />
+              <FilterPill label="失败" value="losses" icon="times" color="#ef4444" onSelect={setSelectedFilter} isSelected={selectedFilter === 'losses'} />
             </View>
           </ScrollView>
         </View>
 
-        {/* 内容 */}
         <ScrollView className="px-6 flex-1" showsVerticalScrollIndicator={false}>
           {isLoading ? (
-            // 加载状态 (保留骨架屏样式)
-          <View className="bg-white/95 rounded-3xl p-4 mb-3">
+            <View className="bg-white/95 rounded-3xl p-4 mb-3">
               <Text className="text-sm font-bold text-gray-500 mb-4">加载中...</Text>
               {[1, 2, 3].map((index) => (
                 <View key={index} className="flex-row items-center py-3 border-b border-gray-100">
@@ -309,27 +255,20 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
                     <View className="w-24 h-4 bg-gray-200 rounded mb-2" />
                     <View className="w-16 h-3 bg-gray-200 rounded" />
                   </View>
-                  <View className="items-end">
-                    <View className="w-12 h-4 bg-gray-200 rounded mb-2" />
-                    <View className="w-8 h-3 bg-gray-200 rounded" />
-                  </View>
                 </View>
               ))}
             </View>
-          ) : !boundPlayerData ? (
-            // 未绑定状态
+          ) : !targetPlayer ? (
             <View className="bg-white/95 rounded-3xl p-6 items-center">
               <FontAwesome5 name="user-slash" size={32} color="#9ca3af" />
               <Text className="text-gray-500 text-center mt-3">请先绑定玩家账号</Text>
-          </View>
+            </View>
           ) : Object.keys(groupedGames).length === 0 ? (
-            // 空状态
             <View className="bg-white/95 rounded-3xl p-6 items-center">
               <FontAwesome5 name="search" size={32} color="#9ca3af" />
               <Text className="text-gray-500 text-center mt-3">暂无对战记录</Text>
             </View>
           ) : (
-            // 游戏记录按日期分组显示
             Object.entries(groupedGames).map(([dateGroup, games]) => (
               <View key={dateGroup} className="bg-white/95 rounded-3xl p-4 mb-3">
                 <Text className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">
@@ -337,10 +276,9 @@ export function HistoryScreen({ boundPlayerData, onShowGameDetail }: HistoryScre
                 </Text>
                 <View>
                   {games.map((game) => (
-                    // 替换 GameRecord 为 ModernGameCard
                     <ModernGameCard
                       key={game.gameId}
-                      game={game} // 传递整个 game 对象
+                      game={game}
                       onPress={() => handleGamePress(game)}
                     />
                   ))}

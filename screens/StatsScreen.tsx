@@ -1,13 +1,14 @@
-// src/screens/StatsScreen.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Context
+import { usePlayer } from '../context/PlayerContext';
+
 // Services
 import { apiService, StatsResponse, Game, MapStatsResponse } from '../services/apiService';
 import { getChineseMapName } from '../services/mapImages';
-import { StorageService } from '../services/storageService';
 import { SearchResult } from '../types';
 
 // Constants & Types
@@ -19,6 +20,8 @@ import { PersonalStatsCard } from '../components/stats/PersonalStatsCard';
 import { FilterSection } from '../components/stats/FilterSection';
 
 export function StatsScreen() {
+  const { boundPlayer } = usePlayer();
+
   // --- 全局状态 ---
   const [selectedLeaderboard, setSelectedLeaderboard] = useState('rm_solo');
   const [selectedRating, setSelectedRating] = useState('');
@@ -31,7 +34,6 @@ export function StatsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // --- 个人数据状态 ---
-  const [boundPlayer, setBoundPlayer] = useState<SearchResult | null>(null);
   const [personalGames, setPersonalGames] = useState<Game[]>([]);
   const [personalCivStats, setPersonalCivStats] = useState<Map<string, {wins: number, total: number, winRate: number}>>(new Map());
   const [personalLoading, setPersonalLoading] = useState(false);
@@ -45,7 +47,6 @@ export function StatsScreen() {
     setLoading(true);
     setError(null);
     try {
-      console.log('📊 获取文明统计数据:', { leaderboard: selectedLeaderboard, rating: selectedRating, mapId: selectedMap });
       let data: StatsResponse;
       if (selectedMap) {
         const mapCivData = await apiService.getMapCivilizationStats(
@@ -83,27 +84,15 @@ export function StatsScreen() {
 
   const fetchPersonalData = async (mode: PersonalMode) => {
     try {
-      const playerId = await StorageService.getBoundPlayerId();
-      if (!playerId) return;
+      if (!boundPlayer) return;
       
-      const latestPlayerData = await apiService.getPlayer(playerId);
       if (personalModeRef.current === mode) setPersonalLoading(true);
 
-      const player: SearchResult = {
-        profile_id: latestPlayerData.profile_id,
-        name: latestPlayerData.name,
-        country: latestPlayerData.country,
-        avatars: latestPlayerData.avatars,
-        leaderboards: latestPlayerData.leaderboards,
-        last_game_at: latestPlayerData.last_game_at
-      };
-      setBoundPlayer(player);
-
-      const gameData = await apiService.getPlayerGames(player.profile_id, { limit: 500, leaderboard: mode });
+      const gameData = await apiService.getPlayerGames(boundPlayer.profile_id, { limit: 500, leaderboard: mode });
       const civStatsMap = new Map<string, {wins: number, total: number, winRate: number}>();
       
       gameData.games.forEach(game => {
-        const playerData = game.teams.flat().find(t => t.player.profile_id === player.profile_id);
+        const playerData = game.teams.flat().find(t => t.player.profile_id === boundPlayer.profile_id);
         if (playerData) {
           const civ = playerData.player.civilization;
           const isWin = playerData.player.result === 'win';
@@ -155,8 +144,13 @@ export function StatsScreen() {
   }, [personalMode]);
 
   useEffect(() => {
-    fetchPersonalData(personalModeRef.current);
-  }, []);
+    if (boundPlayer) {
+      fetchPersonalData(personalModeRef.current);
+    } else {
+      setPersonalGames([]);
+      setPersonalCivStats(new Map());
+    }
+  }, [boundPlayer]);
 
   const sortedCivs = statsData?.data ? [...statsData.data].sort((a, b) => b.win_rate - a.win_rate) : [];
 

@@ -1,26 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 import { SearchResult } from '../types';
-import { apiService, getCountryFlag, Player, LeaderboardEntry, formatRankLevel } from '../services/apiService';
+import { apiService, getCountryFlag, formatRankLevel } from '../services/apiService';
 import StorageService from '../services/storageService';
+import { RootStackParamList } from '../navigation/types';
 
-interface SearchScreenProps {
-  onPlayerSelect?: (player: SearchResult) => void;
-  onViewPlayerHistory?: (player: SearchResult) => void;
-}
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScreenProps) {
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
-  const [searchHistory, setSearchHistory] = React.useState<SearchResult[]>([]);
-  const [hotPlayers, setHotPlayers] = React.useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [hasSearched, setHasSearched] = React.useState(false);
+export function SearchScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchHistory, setSearchHistory] = useState<SearchResult[]>([]);
+  const [hotPlayers, setHotPlayers] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   // 加载搜索历史
-  React.useEffect(() => {
+  useEffect(() => {
     const loadSearchHistory = async () => {
       try {
         const history = await StorageService.getSearchHistory();
@@ -32,11 +35,10 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
     loadSearchHistory();
   }, []);
 
-  // 加载热门玩家（使用排行榜API）
-  React.useEffect(() => {
+  // 加载热门玩家
+  useEffect(() => {
     const loadHotPlayers = async () => {
       try {
-        // 获取1v1排行榜前10名
         const leaderboardData = await apiService.getLeaderboard({
           leaderboard: 'rm_solo',
           page: 1,
@@ -44,32 +46,18 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
         });
         
         if (leaderboardData.players && leaderboardData.players.length > 0) {
-          // 排行榜API返回的players已经包含完整信息，直接转换为SearchResult格式
-          const searchResults: SearchResult[] = leaderboardData.players.map((player: any) => ({
+          const results: SearchResult[] = leaderboardData.players.map((player: any) => ({
             profile_id: player.profile_id,
             name: player.name,
             country: player.country,
             avatars: player.avatars,
             leaderboards: {
-              rm_solo: {
-                rating: player.rating,
-                rank: player.rank,
-                rank_level: player.rank_level,
-                streak: player.streak,
-                games_count: player.games_count,
-                wins_count: player.wins_count,
-                losses_count: player.losses_count,
-                disputes_count: player.disputes_count,
-                drops_count: player.drops_count,
-                last_game_at: player.last_game_at,
-                win_rate: player.win_rate,
-                season: player.season
-              }
+              rm_solo: player
             },
             last_game_at: player.last_game_at
           }));
           
-          setHotPlayers(searchResults);
+          setHotPlayers(results);
         }
       } catch (error) {
         console.error('❌ 加载热门玩家失败:', error);
@@ -87,7 +75,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
     
     try {
       const results = await apiService.searchPlayers({ query: searchQuery.trim() });
-      // 将Player转换为SearchResult
       const searchResults: SearchResult[] = results.players.map(player => ({
         profile_id: player.profile_id,
         name: player.name,
@@ -105,28 +92,25 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
     }
   };
 
-  // 选择玩家
+  // 选择玩家 -> 跳转到历史页面
   const handlePlayerSelect = async (player: SearchResult) => {
-    // 保存到搜索历史
     try {
       await StorageService.addToSearchHistory(player);
-      // 更新本地搜索历史状态
       setSearchHistory(prev => {
         const filtered = prev.filter(p => p.profile_id !== player.profile_id);
-        return [player, ...filtered].slice(0, 10); // 最多保存10个
+        return [player, ...filtered].slice(0, 10);
       });
     } catch (error) {
       console.error('❌ 保存搜索历史失败:', error);
     }
     
     // 导航到历史记录页面查看该玩家的对局
-    onViewPlayerHistory?.(player);
-    
-    // 回调给父组件
-    onPlayerSelect?.(player);
+    navigation.navigate('MainTabs', { 
+        screen: 'History',
+        params: { targetPlayer: player }
+    });
   };
 
-  // 清除搜索历史
   const clearSearchHistory = async () => {
     try {
       await StorageService.clearSearchHistory();
@@ -136,25 +120,19 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
     }
   };
 
-  // 格式化最后游戏时间
   const formatLastGameTime = (lastGameAt?: string): string => {
     if (!lastGameAt) return '未知';
-    
     const now = new Date();
     const gameTime = new Date(lastGameAt);
     const diffInHours = Math.floor((now.getTime() - gameTime.getTime()) / (1000 * 60 * 60));
-    
     if (diffInHours < 1) return '刚刚在线';
     if (diffInHours < 24) return `${diffInHours}小时前在线`;
-    
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}天前在线`;
     if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}周前在线`;
-    
     return `${Math.floor(diffInDays / 30)}月前在线`;
   };
 
-  // 玩家卡片组件
   const PlayerCard = ({ player }: { player: SearchResult }) => {
     const rmSoloData = player.leaderboards?.rm_solo;
     
@@ -164,7 +142,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
         className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
       >
         <View className="flex-row items-center">
-          {/* 头像 */}
           <View className="w-14 h-14 rounded-xl mr-3 overflow-hidden bg-gray-200 relative">
             {player.avatars?.medium ? (
               <Image 
@@ -178,7 +155,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
               </View>
             )}
             
-            {/* 国旗徽章 */}
             {player.country && (
               <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-gray-800 rounded-full items-center justify-center border border-white/20">
                 <Text className="text-xs">
@@ -188,16 +164,13 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
             )}
           </View>
           
-          {/* 玩家信息 */}
           <View className="flex-1">
-            {/* 第一行：姓名 */}
             <View className="flex-row items-center mb-1">
               <Text className="font-bold text-gray-800 text-base" numberOfLines={1}>
                 {player.name}
               </Text>
             </View>
             
-            {/* 第二行：ID和ELO */}
             {rmSoloData && (
               <View className="flex-row items-center mb-1">
                 <Text className="text-purple-600 font-semibold text-sm mr-2">
@@ -216,7 +189,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
               </View>
             )}
             
-            {/* 第三行：排名、胜率和场数 */}
             {rmSoloData && (
               <View className="flex-row items-center mb-1">
                 {rmSoloData.rank && (
@@ -237,7 +209,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
               </View>
             )}
             
-            {/* 第四行：最后上线时间 */}
             <View className="flex-row items-center">
               <FontAwesome5 name="clock" size={10} color="#9ca3af" />
               <Text className="text-gray-400 text-xs ml-1">
@@ -254,11 +225,7 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
 
   return (
     <View className="flex-1 bg-slate-900">
-      <LinearGradient
-        colors={['#0f172a', '#581c87', '#0f172a']}
-        className="flex-1"
-      >
-        {/* 头部 */}
+      <LinearGradient colors={['#0f172a', '#581c87', '#0f172a']} className="flex-1">
         <View className="px-6 pb-4 pt-10">
           <View>
             <Text className="text-2xl font-bold text-white">搜索玩家</Text>
@@ -266,7 +233,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
           </View>
         </View>
 
-        {/* 搜索框 */}
         <View className="px-6 pb-4">
           <View className="bg-white/10 rounded-2xl p-4 flex-row items-center">
             <FontAwesome5 name="search" size={16} color="white" />
@@ -298,10 +264,7 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
           )}
         </View>
 
-        {/* 内容 */}
         <ScrollView className="px-6 flex-1" showsVerticalScrollIndicator={false}>
-          
-          {/* 搜索结果 */}
           {hasSearched && (
             <View className="bg-white/95 rounded-3xl p-6 mb-4">
               <Text className="text-lg font-bold text-gray-800 mb-4">
@@ -309,7 +272,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
               </Text>
               
               {isLoading ? (
-                // 加载状态
                 <View className="space-y-3">
                   {[1, 2, 3].map((index) => (
                     <View key={index} className="animate-pulse">
@@ -324,17 +286,12 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
                   ))}
                 </View>
               ) : searchResults.length > 0 ? (
-                // 搜索结果列表
                 <View>
                   {searchResults.map((player) => (
-                    <PlayerCard 
-                      key={player.profile_id} 
-                      player={player} 
-                    />
+                    <PlayerCard key={player.profile_id} player={player} />
                   ))}
                 </View>
               ) : (
-                // 无搜索结果
                 <View className="py-8 items-center">
                   <FontAwesome5 name="search" size={32} color="#9ca3af" />
                   <Text className="text-gray-500 text-center mt-3">
@@ -348,7 +305,6 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
             </View>
           )}
 
-          {/* 搜索历史 */}
           {!hasSearched && searchHistory.length > 0 && (
             <View className="bg-white/95 rounded-3xl p-6 mb-4">
               <View className="flex-row items-center justify-between mb-4">
@@ -360,16 +316,12 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
               
               <View>
                 {searchHistory.map((player) => (
-                  <PlayerCard 
-                    key={player.profile_id} 
-                    player={player} 
-                  />
+                  <PlayerCard key={player.profile_id} player={player} />
                 ))}
               </View>
             </View>
           )}
 
-          {/* 热门玩家 */}
           {!hasSearched && hotPlayers.length > 0 && (
             <View className="bg-white/95 rounded-3xl p-6 mb-6">
               <Text className="text-lg font-bold text-gray-800 mb-4">
@@ -380,17 +332,13 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
               </Text>
               
               <View>
-                {hotPlayers.map((player, index) => (
-                  <PlayerCard 
-                    key={player.profile_id} 
-                    player={player} 
-                  />
+                {hotPlayers.map((player) => (
+                  <PlayerCard key={player.profile_id} player={player} />
                 ))}
               </View>
             </View>
           )}
 
-          {/* 空状态 */}
           {!hasSearched && searchHistory.length === 0 && hotPlayers.length === 0 && (
             <View className="bg-white/95 rounded-3xl p-6 items-center">
               <FontAwesome5 name="search" size={48} color="#9ca3af" />
@@ -406,4 +354,4 @@ export function SearchScreen({ onPlayerSelect, onViewPlayerHistory }: SearchScre
       </LinearGradient>
     </View>
   );
-} 
+}

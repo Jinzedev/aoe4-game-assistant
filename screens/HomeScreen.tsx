@@ -2,52 +2,46 @@ import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, AppState, AppStateStatus } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SearchResult } from '../types';
-import { apiService, calculateMonthlyStats, MonthlyStats } from '../services/apiService';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-// 引入新的现代化组件
+// Context & Types
+import { usePlayer } from '../context/PlayerContext';
+import { RootStackParamList } from '../navigation/types';
+import { calculateMonthlyStats, MonthlyStats, apiService } from '../services/apiService';
+
+// Components
 import { ModernGameCard } from '../components/home/MatchCard';
 import { FilterPill } from '../components/home/FilterPill';
-import { HomeHeader } from '../components/home/HomeHeader'; 
-import { MonthlyStatsCard } from '../components/home/MonthlyStatsCard'; 
+import { HomeHeader } from '../components/home/HomeHeader';
+import { MonthlyStatsCard } from '../components/home/MonthlyStatsCard';
 
-interface HomeScreenProps {
-  boundPlayerData?: SearchResult;
-  onShowBinding: () => void;
-  onUnbind?: () => void;
-  onViewAllGames?: () => void;
-  onViewGameDetail?: (gameId: string) => void;
-  onRefreshPlayerData?: () => Promise<SearchResult | null>;
-}
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export function HomeScreen({
-  boundPlayerData,
-  onShowBinding,
-  onUnbind,
-  onViewAllGames,
-  onViewGameDetail,
-  onRefreshPlayerData,
-}: HomeScreenProps) {
-  const [monthlyStats, setMonthlyStats] = React.useState<MonthlyStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = React.useState(false);
-  const [recentGames, setRecentGames] = React.useState<any[]>([]);
-  const [allGames, setAllGames] = React.useState<any[]>([]);
-  const [isLoadingGames, setIsLoadingGames] = React.useState(false);
+export function HomeScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  // 从 Context 获取数据和方法
+  const { boundPlayer, unbindPlayer, refreshPlayer } = usePlayer();
 
-  const [selectedFilter, setSelectedFilter] = React.useState('all');
-  const [selectedMode, setSelectedMode] = React.useState<'rm_solo' | 'rm_team' | 'qm_4v4'>(
-    'rm_solo'
-  );
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [recentGames, setRecentGames] = useState<any[]>([]);
+  const [allGames, setAllGames] = useState<any[]>([]);
+  const [isLoadingGames, setIsLoadingGames] = useState(false);
 
-  // ===== 刷新逻辑 (保持不变) =====
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedMode, setSelectedMode] = useState<'rm_solo' | 'rm_team' | 'qm_4v4'>('rm_solo');
+
+  // ===== 刷新逻辑 =====
   const hasInitialRefreshedRef = useRef(false);
 
   React.useEffect(() => {
-    if (!onRefreshPlayerData) return;
+    if (!boundPlayer) return;
+
     if (!hasInitialRefreshedRef.current) {
       hasInitialRefreshedRef.current = true;
       console.log('🔄 [HomeScreen] 首次进入首页，尝试刷新玩家信息');
-      onRefreshPlayerData().catch((err) =>
+      refreshPlayer().catch((err) =>
         console.error('❌ [HomeScreen] 首次刷新玩家信息失败:', err)
       );
     }
@@ -57,19 +51,19 @@ export function HomeScreen({
       currentStateRef.value = nextState;
       if ((prevState === 'inactive' || prevState === 'background') && nextState === 'active') {
         console.log('🔄 [HomeScreen] 应用回到前台，自动刷新玩家信息');
-        onRefreshPlayerData().catch((err) =>
+        refreshPlayer().catch((err) =>
           console.error('❌ [HomeScreen] 前台刷新玩家信息失败:', err)
         );
       }
     };
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [onRefreshPlayerData]);
+  }, [boundPlayer, refreshPlayer]);
 
-  // 🔥 获取本月表现数据 (保持不变)
+  // 🔥 获取本月表现数据
   React.useEffect(() => {
     const fetchMonthlyStats = async () => {
-      if (!boundPlayerData) {
+      if (!boundPlayer) {
         setMonthlyStats(null);
         return;
       }
@@ -77,11 +71,11 @@ export function HomeScreen({
       try {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
+        const gamesResponse = await apiService.getPlayerGames(boundPlayer.profile_id, {
           since: monthStart.toISOString(),
           limit: 200,
         });
-        const stats = calculateMonthlyStats(gamesResponse.games, boundPlayerData.profile_id);
+        const stats = calculateMonthlyStats(gamesResponse.games, boundPlayer.profile_id);
         setMonthlyStats(stats);
       } catch (error) {
         console.error('❌ 获取本月表现数据失败:', error);
@@ -98,18 +92,18 @@ export function HomeScreen({
       }
     };
     fetchMonthlyStats();
-  }, [boundPlayerData]);
+  }, [boundPlayer]);
 
-  // 🎮 获取最近对战数据 (保持不变)
+  // 🎮 获取最近对战数据
   React.useEffect(() => {
     const fetchRecentGames = async () => {
-      if (!boundPlayerData) {
+      if (!boundPlayer) {
         setRecentGames([]);
         return;
       }
       setIsLoadingGames(true);
       try {
-        const gamesResponse = await apiService.getPlayerGames(boundPlayerData.profile_id, {
+        const gamesResponse = await apiService.getPlayerGames(boundPlayer.profile_id, {
           limit: 20,
         });
         const formattedGames = gamesResponse.games
@@ -125,7 +119,7 @@ export function HomeScreen({
               const team = game.teams[teamIndex];
               if (Array.isArray(team)) {
                 for (const playerWrapper of team) {
-                  if (playerWrapper.player.profile_id === boundPlayerData.profile_id) {
+                  if (playerWrapper.player.profile_id === boundPlayer.profile_id) {
                     playerData = playerWrapper.player;
                     playerTeam = team;
                     opponentTeam = game.teams[1 - teamIndex];
@@ -221,9 +215,9 @@ export function HomeScreen({
       }
     };
     fetchRecentGames();
-  }, [boundPlayerData]);
+  }, [boundPlayer]);
 
-  // 筛选逻辑 (保持不变)
+  // 筛选逻辑
   const filterGames = React.useCallback(
     (filter: string) => {
       if (!allGames.length) return;
@@ -257,33 +251,39 @@ export function HomeScreen({
     filterGames(selectedFilter);
   }, [selectedFilter, filterGames]);
 
-  const showSkeleton = !boundPlayerData;
-
-  // 保持自动设置段位模式的逻辑 (它负责设置 selectedMode state)
+  // 自动设置模式
   React.useEffect(() => {
-    if (!boundPlayerData?.leaderboards) return;
-    const lb = boundPlayerData.leaderboards;
+    if (!boundPlayer?.leaderboards) return;
+    const lb = boundPlayer.leaderboards;
     if (lb.rm_solo) setSelectedMode('rm_solo');
     else if (lb.rm_team) setSelectedMode('rm_team');
     else if (lb.qm_4v4) setSelectedMode('qm_4v4');
-  }, [boundPlayerData]);
+  }, [boundPlayer]);
+
+  const showSkeleton = !boundPlayer;
+
+  // 跳转处理
+  const handleShowBinding = () => navigation.navigate('AccountBinding');
+  const handleViewAllGames = () => navigation.navigate('MainTabs', { screen: 'History',params: {} });
+  const handleViewGameDetail = (gameId: string) => {
+    if (boundPlayer) {
+      navigation.navigate('GameDetail', { gameId: Number(gameId), profileId: boundPlayer.profile_id });
+    }
+  };
 
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient colors={['#0f172a', '#581c87', '#0f172a']} className="flex-1">
-        {/* 1. 头部用户信息 (HomeHeader) */}
         <HomeHeader
-          boundPlayerData={boundPlayerData}
+          boundPlayerData={boundPlayer || undefined}
           selectedMode={selectedMode}
           setSelectedMode={setSelectedMode}
-          onUnbind={onUnbind}
+          onUnbind={unbindPlayer}
           showSkeleton={showSkeleton}
         />
 
-        {/* 内容区域 */}
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {showSkeleton ? (
-            /* 未绑定状态 (保留在 ScrollView 内容区) */
             <View className="mb-6 items-center rounded-3xl bg-white/95 p-8 shadow-lg">
               <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-purple-100">
                 <FontAwesome5 name="link" size={24} color="#7c3aed" />
@@ -293,33 +293,27 @@ export function HomeScreen({
                 绑定你的游戏账户后{'\n'}即可查看详细的数据统计和对战记录
               </Text>
               <TouchableOpacity
-                onPress={onShowBinding}
+                onPress={handleShowBinding}
                 className="rounded-2xl bg-purple-500 px-8 py-3">
                 <Text className="text-base font-bold text-white">立即绑定</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <>
-              {/* 2. 本月表现 (MonthlyStatsCard) */}
               <MonthlyStatsCard monthlyStats={monthlyStats} isLoadingStats={isLoadingStats} />
 
-              {/* 最近对战列表 (保持不变) */}
               <View className="mb-6 rounded-3xl bg-white/95 p-6 shadow-lg">
-                {/* 头部区域 */}
                 <View className="mb-6">
                   <View className="mb-4 flex-row items-center justify-between">
                     <Text className="text-xl font-extrabold text-slate-800">最近对战</Text>
-                    {onViewAllGames && (
-                      <TouchableOpacity
-                        onPress={onViewAllGames}
-                        className="rounded-full bg-purple-50 px-4 py-2">
-                        <Text className="text-xs font-bold text-purple-600">查看全部</Text>
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                      onPress={handleViewAllGames}
+                      className="rounded-full bg-purple-50 px-4 py-2">
+                      <Text className="text-xs font-bold text-purple-600">查看全部</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
-                {/* 2. 筛选胶囊 (Filter Pills) */}
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -367,7 +361,6 @@ export function HomeScreen({
                   />
                 </ScrollView>
 
-                {/* 3. 列表内容渲染 */}
                 <View>
                   {isLoadingGames ? (
                     <View className="items-center py-10">
@@ -378,7 +371,7 @@ export function HomeScreen({
                       <ModernGameCard
                         key={game.gameId}
                         game={game}
-                        onPress={() => onViewGameDetail?.(game.gameId)}
+                        onPress={() => handleViewGameDetail(game.gameId)}
                       />
                     ))
                   ) : (
