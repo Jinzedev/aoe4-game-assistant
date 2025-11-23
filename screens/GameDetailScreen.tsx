@@ -10,6 +10,7 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar'; // ✅ 1. 新增引入
 
 import ApiService from '../services/apiService';
 import { getMapInfo, getChineseMapName } from '../services/mapImages';
@@ -62,7 +63,13 @@ export function GameDetailScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      {/* ✅ 2. 设置状态栏样式：style="light" 表示白色文字，backgroundColor 设为深色(Android) */}
+      <StatusBar style="light" backgroundColor="#0f172a" />
+      
+      <SafeAreaView 
+        style={{ flex: 1, backgroundColor: '#0f172a' }} // ✅ 3. 确保安全区域背景也是深色
+        edges={['top']}
+      >
         <View className="flex-1 bg-slate-900">
           {/* 头部导航 */}
           <View className="flex-row items-center justify-between px-4 pb-4">
