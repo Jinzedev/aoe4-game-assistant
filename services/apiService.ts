@@ -350,7 +350,7 @@ class ApiService {
   
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ [游戏分析] 请求失败:', errorText);
+        console.log('❌ [游戏分析] 请求失败:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
@@ -359,12 +359,8 @@ class ApiService {
       
       return data;
     } catch (error) {
-      console.error('💥 [游戏分析] 获取失败:', error);
-      console.error('💥 [游戏分析] 错误详情:', {
-        message: error instanceof Error ? error.message : '未知错误',
-        stack: error instanceof Error ? error.stack : '无堆栈信息'
-      });
-      throw error;
+      console.log('💥 [游戏分析] 获取失败:', error);
+      
     }
   }
 }

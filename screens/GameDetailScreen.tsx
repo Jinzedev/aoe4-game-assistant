@@ -36,7 +36,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
       const data = await ApiService.getPlayerGame(profileId, gameId);
       setGameBasicInfo(data);
     } catch (error) {
-      Alert.alert('获取失败', '无法获取游戏基本信息，请稍后重试');
+      console.log('获取失败', '无法获取游戏基本信息，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,10 @@ export function GameDetailScreen({ route, navigation }: Props) {
       const data = await ApiService.getGameSummary(profileId, gameId);
       setGameSummary(data);
     } catch (error) {
-      console.error('❌ 获取游戏详细数据失败:', error);
+      console.log('⚠️ 无法获取游戏详细统计数据 (可能是旧数据或API限制):', error instanceof Error ? error.message : error);
+      
+      // 可选：如果需要，可以在这里设置一个空状态，防止 UI 崩溃
+      setGameSummary(null);
     } finally {
       setSummaryLoading(false);
     }
@@ -233,7 +236,18 @@ export function GameDetailScreen({ route, navigation }: Props) {
                           players={gameSummary.players}
                           currentProfileId={profileId}
                         />
-                      ) : null}
+                      ) : (
+                        // 3. 数据为空 (404 或其他原因) -> 显示提示信息
+                        <View className="mt-4 mx-1 items-center justify-center rounded-2xl bg-white/5 border border-white/10 py-8 px-4">
+                          <View className="h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
+                            <FontAwesome5 name="file-invoice-dollar" size={20} color="#64748b" />
+                          </View>
+                          <Text className="text-sm font-bold text-slate-400">暂无详细数据</Text>
+                          <Text className="mt-1 text-center text-xs text-slate-500">
+                            官方未提供本场对局的详细经济/军事统计
+                          </Text>
+                        </View>
+                      )}
                       <View className="h-8" />
                     </ScrollView>
                   );
