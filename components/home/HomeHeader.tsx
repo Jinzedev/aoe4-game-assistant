@@ -2,12 +2,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { SearchResult } from '../types';
+import { SearchResult } from '../../types';
 // 导入所有需要的工具函数
-import { formatRankLevel, getRankIcon, getCountryFlag } from '../services/apiService'; 
+import { formatRankLevel, getRankIcon, getCountryFlag } from '../../services/apiService'; 
 // 假设 PlayerAvatar 和 SkeletonLoader 位于 components 目录下
-import { PlayerAvatar } from './PlayerAvatar'; 
-import { SkeletonLoader } from './SkeletonLoader'; 
+import { PlayerAvatar } from '../PlayerAvatar'; 
+import { SkeletonLoader } from '../SkeletonLoader'; 
 
 type LeaderboardMode = 'rm_solo' | 'rm_team' | 'qm_4v4';
 

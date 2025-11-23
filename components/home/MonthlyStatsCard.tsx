@@ -5,7 +5,7 @@ import { View, Text } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 // 假设 MonthlyStats 类型可以从 apiService 导入，但此处我们只使用接口
-import { MonthlyStats } from '../services/apiService'; 
+import { MonthlyStats } from '../../services/apiService'; 
 
 interface MonthlyStatsCardProps {
   monthlyStats: MonthlyStats | null;

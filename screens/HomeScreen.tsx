@@ -3,18 +3,13 @@ import { View, Text, ScrollView, TouchableOpacity, AppState, AppStateStatus } fr
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SearchResult } from '../types';
-// 移除已迁移到 HomeHeader 的工具函数，只保留需要的
 import { apiService, calculateMonthlyStats, MonthlyStats } from '../services/apiService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 引入新的现代化组件
-import { ModernGameCard } from '../components/MatchCard';
-// 移除已抽取的组件导入
-// import { PlayerAvatar } from '../components/PlayerAvatar';
-// import { SkeletonLoader } from '../components/SkeletonLoader';
-import { FilterPill } from '../components/FilterPill';
-import { HomeHeader } from '../components/HomeHeader'; // <-- 新增
-import { MonthlyStatsCard } from '../components/MonthlyStatsCard'; // <-- 新增
+import { ModernGameCard } from '../components/home/MatchCard';
+import { FilterPill } from '../components/home/FilterPill';
+import { HomeHeader } from '../components/home/HomeHeader'; 
+import { MonthlyStatsCard } from '../components/home/MonthlyStatsCard'; 
 
 interface HomeScreenProps {
   boundPlayerData?: SearchResult;

@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getMapInfo, getChineseMapName } from '../services/mapImages';
-import { getCivilizationInfo } from '../services/civilizationImages';
+import { getMapInfo, getChineseMapName } from '../../services/mapImages';
+import { getCivilizationInfo } from '../../services/civilizationImages';
 
 interface ModernGameCardProps {
   game: any;
