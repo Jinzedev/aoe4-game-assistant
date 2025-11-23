@@ -76,19 +76,33 @@ export interface GameSummaryPlayer {
     sqprod: number;
     sqkill: number;
     edeaths: number;
-    structdmg: number;
+    structdmg: number;// 对应摧毁建筑数 (Razed)
     blost: number;
     upg: number;
     pcap: number;
     plost: number;
     precap: number;
+    ekills: number;    // 击杀
+    unitprod: number;  // 生产
+    bprod: number;     // 建造
   };
   apm?: number;
-}
 
+  // === 必须补充这个字段，用于计算最大工人数 ===
+  buildOrder?: {
+    id: string;
+    icon: string;      // 关键：用于识别 villager/trader/fishing_ship
+    type: string;      // 关键：用于筛选 "Unit"
+    finished?: number[]; // 建造完成时间戳数组
+    destroyed?: number[]; // 死亡时间戳数组
+    unknown?: {        // 兼容性：部分特殊的单位时间戳可能在这里
+      [key: string]: number[];
+    };
+  }[];
+}
 export interface GameSummary {
   gameId: number;
   duration: number;
   map: string;
   players: GameSummaryPlayer[];
-} 
+}
