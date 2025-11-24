@@ -1,348 +1,141 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  Switch,
-  Linking,
-  ActivityIndicator,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome5 } from '@expo/vector-icons';
-import UpdateService from '../services/updateService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BlurView } from 'expo-blur';
 import { APP_CONFIG } from '../constants/App';
-
-interface NetworkSpeed {
-  gitea?: number;
-  gitee: number;
-  github: number;
-  recommended: 'gitea' | 'gitee' | 'github';
-}
-
-interface DownloadUrls {
-  gitea?: string;
-  gitee?: string;
-  github?: string;
-  recommended: string;
-}
+import { checkExpoUpdate } from 'utils/expoUpdate';
 
 export function SettingsScreen() {
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [testingNetwork, setTestingNetwork] = useState(false);
-  const [networkSpeed, setNetworkSpeed] = useState<NetworkSpeed | null>(null);
-  const [downloadUrls, setDownloadUrls] = useState<DownloadUrls | null>(null);
-
-  const checkForUpdate = async () => {
-    setCheckingUpdate(true);
-    try {
-      const updateInfo = await UpdateService.checkForUpdate();
-      
-      if (updateInfo.hasUpdate) {
-        const sourceMap = {
-          'gitea': 'Gitea(私有服务器)',
-          'gitee': 'Gitee(码云)',
-          'github': 'GitHub'
-        };
-        Alert.alert(
-          '发现新版本 🎉',
-          `当前版本：${updateInfo.currentVersion}\n最新版本：${updateInfo.latestVersion}\n来源：${sourceMap[updateInfo.source as keyof typeof sourceMap]}\n\n${updateInfo.releaseNotes || '查看更多详情请访问发布页面'}`,
-          [
-            { text: '取消', style: 'cancel' },
-            { 
-              text: '查看多平台下载', 
-              onPress: () => getDownloadOptions(),
-            },
-            {
-              text: '立即下载',
-              onPress: () => updateInfo.downloadUrl && Linking.openURL(updateInfo.downloadUrl),
-            },
-          ]
-        );
-      } else {
-        const sourceMap = {
-          'gitea': 'Gitea(私有服务器)',
-          'gitee': 'Gitee(码云)',
-          'github': 'GitHub'
-        };
-        Alert.alert(
-          '已是最新版本 ✨',
-          `当前版本：${updateInfo.currentVersion}\n检查来源：${sourceMap[updateInfo.source as keyof typeof sourceMap]}`,
-          [{ text: '确定' }]
-        );
-      }
-    } catch (error) {
-      Alert.alert(
-        '检查更新失败',
-        error instanceof Error ? error.message : '未知错误',
-        [{ text: '确定' }]
-      );
-    } finally {
-      setCheckingUpdate(false);
+  // 支持网页复制与原生提示
+  const handleCopy = (text: string) => {
+    if (Platform.OS === 'web' && navigator?.clipboard) {
+      navigator.clipboard.writeText(text);
+      Alert.alert('已复制', '群号已复制到剪贴板，请打开QQ搜索加入。');
+    } else {
+      Alert.alert('请手动复制', `群号：${text}\n请手动长按群号并复制。`);
     }
   };
 
-  const getDownloadOptions = async () => {
-    try {
-      const urls = await UpdateService.getDownloadUrls();
-      setDownloadUrls(urls);
-      
-      const options = [];
-      if (urls.gitea) {
-        options.push({
-          text: '🏠 Gitea下载 (私有服务器)',
-          onPress: () => Linking.openURL(urls.gitea!),
-        });
-      }
-      if (urls.gitee) {
-        options.push({
-          text: '🚀 Gitee下载 (国内推荐)',
-          onPress: () => Linking.openURL(urls.gitee!),
-        });
-      }
-      if (urls.github) {
-        options.push({
-          text: '🐙 GitHub下载',
-          onPress: () => Linking.openURL(urls.github!),
-        });
-      }
-      options.push({ text: '取消', style: 'cancel' as const });
-
-      Alert.alert(
-        '选择下载源',
-        '请选择最适合您网络环境的下载源：',
-        options
-      );
-    } catch (error) {
-      Alert.alert('获取下载链接失败', '请稍后重试');
-    }
-  };
-
-  const testNetworkSpeed = async () => {
-    setTestingNetwork(true);
-    try {
-      const speed = await UpdateService.testNetworkSpeed();
-      setNetworkSpeed(speed);
-      
-      const giteaStatus = speed.gitea !== undefined ? (speed.gitea < 9999 ? `${speed.gitea}ms` : '连接失败') : '未配置';
-      const giteeStatus = speed.gitee < 9999 ? `${speed.gitee}ms` : '连接失败';
-      const githubStatus = speed.github < 9999 ? `${speed.github}ms` : '连接失败';
-      
-      const recommendationMap = {
-        'gitea': 'Gitea(私有服务器)',
-        'gitee': 'Gitee(码云)',
-        'github': 'GitHub'
-      };
-      const recommendation = recommendationMap[speed.recommended];
-      
-      const message = giteaStatus !== '未配置' 
-        ? `Gitea连接速度: ${giteaStatus}\nGitee连接速度: ${giteeStatus}\nGitHub连接速度: ${githubStatus}\n\n推荐使用: ${recommendation}`
-        : `Gitee连接速度: ${giteeStatus}\nGitHub连接速度: ${githubStatus}\n\n推荐使用: ${recommendation}`;
-        
-      Alert.alert(
-        '网络测试结果',
-        message,
-        [{ text: '确定' }]
-      );
-    } catch (error) {
-      Alert.alert('网络测试失败', '请检查网络连接');
-    } finally {
-      setTestingNetwork(false);
-    }
-  };
-
-  const openQQGroup = () => {
+  const handleJoinQQ = () => {
     const qqUrl = `mqqopensdkapi://bizAgent/qm/qr?url=http://qm.qq.com/cgi-bin/qm/qr?from=app&p=android&jump_from=webapi&k=${APP_CONFIG.QQ_GROUP}`;
+
     Linking.openURL(qqUrl).catch(() => {
-      Alert.alert(
-        'QQ群',
-        `群号：${APP_CONFIG.QQ_GROUP}\n\n请手动添加或复制群号到QQ中搜索`,
-        [{ text: '确定' }]
-      );
+      Alert.alert('无法直接跳转', `未检测到QQ或跳转失败。\n群号：${APP_CONFIG.QQ_GROUP}`, [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '复制群号',
+          onPress: () => handleCopy(APP_CONFIG.QQ_GROUP),
+        },
+      ]);
     });
   };
 
-  const openGitHub = () => {
-    const githubUrl = `https://github.com/${APP_CONFIG.GITHUB_REPO}`;
-    Linking.openURL(githubUrl);
-  };
-
-  const openGitea = () => {
-    if (APP_CONFIG.GITEA_URL) {
-      const giteaUrl = `${APP_CONFIG.GITEA_URL}/${APP_CONFIG.GITEA_REPO}`;
-      Linking.openURL(giteaUrl);
-    } else {
-      Alert.alert('提示', 'Gitea服务器未配置');
-    }
-  };
-
-  const openGitee = () => {
-    const giteeUrl = `https://gitee.com/${APP_CONFIG.GITEE_REPO}`;
-    Linking.openURL(giteeUrl);
-  };
-
-  const SettingItem = ({ 
-    icon, 
-    title, 
-    subtitle, 
-    hasSwitch = false,
-    switchValue = false,
-    onSwitchChange,
-    hasLoading = false,
-    isLoading = false,
-    hasArrow = true,
-    onPress
-  }: {
-    icon: string;
-    title: string;
-    subtitle?: string;
-    hasSwitch?: boolean;
-    switchValue?: boolean;
-    onSwitchChange?: (value: boolean) => void;
-    hasLoading?: boolean;
-    isLoading?: boolean;
-    hasArrow?: boolean;
-    onPress?: () => void;
-  }) => (
-    <TouchableOpacity 
-      className="bg-white/95 rounded-2xl p-4 mb-3 flex-row items-center justify-between"
-      onPress={onPress}
-      activeOpacity={0.7}
-      disabled={!onPress || isLoading}
-    >
-      <View className="flex-row items-center flex-1">
-        <View className="bg-purple-100 rounded-xl p-3 mr-4">
-          <FontAwesome5 name={icon as any} size={16} color="#7c3aed" />
-        </View>
-        <View className="flex-1">
-          <Text className="text-gray-800 font-semibold text-base">{title}</Text>
-          {subtitle && (
-            <Text className="text-gray-500 text-sm mt-1">{subtitle}</Text>
-          )}
-        </View>
-      </View>
-      <View className="flex-row items-center">
-        {hasSwitch && onSwitchChange ? (
-          <Switch
-            value={switchValue}
-            onValueChange={onSwitchChange}
-            trackColor={{ false: '#767577', true: '#7c3aed' }}
-            thumbColor={switchValue ? '#fff' : '#f4f3f4'}
-          />
-        ) : hasLoading && isLoading ? (
-          <ActivityIndicator size="small" color="#7c3aed" />
-        ) : hasArrow && onPress ? (
-          <FontAwesome5 name="chevron-right" size={12} color="#9ca3af" />
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
-    <View className="flex-1 bg-slate-900">
-      <LinearGradient
-        colors={['#0f172a', '#581c87', '#0f172a']}
-        className="flex-1"
-      >
-        {/* 头部 */}
-        <View className="px-6 pb-4 pt-10">
-          <View>
-            <Text className="text-2xl font-bold text-white">设置</Text>
-            <Text className="text-white/60">个性化你的体验</Text>
-          </View>
+    <SafeAreaProvider>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }} edges={['top', 'bottom']}>
+        <View className="flex-1 bg-slate-900">
+          <LinearGradient colors={['#0f172a', '#3b0764', '#0f172a']} className="flex-1">
+            <View className="px-6 pb-8 pt-14">
+              <Text className="text-3xl font-extrabold tracking-wider text-white">设置</Text>
+            </View>
+
+            <View className="-mt-20 flex-1 justify-center px-6">
+              <View
+                className="rounded-3xl px-2 py-2 shadow-2xl shadow-purple-500/40"
+                style={{
+                  shadowColor: '#c084fc',
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.36,
+                  shadowRadius: 28,
+                }}>
+                <BlurView intensity={28} tint="dark" style={{ borderRadius: 24 }}>
+                  <LinearGradient
+                    colors={['#342452f0', '#191227e8']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="overflow-hidden rounded-3xl border border-white/10">
+                    {/* 上半部分 */}
+                    <View className="items-center p-8">
+                      <View className="mb-8 h-24 w-24 items-center justify-center rounded-full bg-purple-700/30 ring-8 ring-purple-600/30">
+                        <FontAwesome5 name="paint-roller" size={40} color="#c084fc" />
+                      </View>
+                      <Text className="mb-2 text-2xl font-extrabold tracking-wide text-white">
+                        功能施工中
+                      </Text>
+                      <Text className="mb-4 text-center text-base leading-6 text-gray-400">
+                        此区域正在等待建议！{'\n'}如需反馈 BUG 或催更，请加入内测群。
+                      </Text>
+                    </View>
+
+                    {/* 虚线撕票区 */}
+                    <View className="mb-4 flex-row items-center justify-between overflow-hidden px-2">
+                      <View className="h-6 w-6 rounded-full bg-[#191227]" />
+                      <View
+                        className="mx-2 h-0.5 flex-1"
+                        style={{
+                          borderStyle: 'dashed',
+                          borderColor: '#a855f7',
+                          borderWidth: 1,
+                          opacity: 0.7,
+                        }}
+                      />
+                      <View className="h-6 w-6 rounded-full bg-[#191227]" />
+                    </View>
+
+                    {/* 行动区 */}
+                    <View className="rounded-b-3xl bg-slate-900/70 p-6">
+                      <View className="mb-6 flex-row items-center justify-between rounded-xl border border-purple-500/20 bg-black/40 p-4">
+                        {/* 群号数字支持点击复制 */}
+                        <TouchableOpacity
+                          onPress={() => handleCopy(APP_CONFIG.QQ_GROUP)}
+                          activeOpacity={0.7}>
+                          <Text className="mb-1 text-xs uppercase tracking-widest text-purple-300">
+                            官方群号
+                          </Text>
+                          <Text
+                            className="text-3xl font-extrabold text-purple-300"
+                            style={{ letterSpacing: 2 }}>
+                            {APP_CONFIG.QQ_GROUP}
+                          </Text>
+                          <Text className="mt-1 text-xs text-gray-400">点击数字复制</Text>
+                        </TouchableOpacity>
+                        <View className="h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+                          <FontAwesome5 name="hashtag" size={18} color="#c084fc" />
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={handleJoinQQ}
+                        activeOpacity={0.9}
+                        style={{
+                          shadowColor: '#a855f7',
+                          shadowOpacity: 0.16,
+                          shadowOffset: { width: 0, height: 12 },
+                          shadowRadius: 14,
+                          transform: [{ scale: 1 }],
+                        }}>
+                        <LinearGradient
+                          colors={['#a855f7', '#7c3aed']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          className="flex-row items-center justify-center rounded-xl py-4">
+                          <FontAwesome5 name="qq" size={22} color="white" />
+                          <Text className="ml-3 text-lg font-bold text-white">立即加入</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={checkExpoUpdate}>
+                        <Text>检查更新</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </LinearGradient>
+                </BlurView>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
-
-        {/* 内容 */}
-        <ScrollView className="px-6 flex-1" showsVerticalScrollIndicator={false}>
-          {/* 应用更新 */}
-          <View className="mb-6">
-            <Text className="text-white font-semibold text-lg mb-3 px-2">应用更新</Text>
-            
-            <SettingItem
-              icon="download"
-              title="检查更新"
-              subtitle={`当前版本 ${APP_CONFIG.VERSION}`}
-              hasLoading={true}
-              isLoading={checkingUpdate}
-              onPress={checkForUpdate}
-            />
-
-            <SettingItem
-              icon="tachometer-alt"
-              title="网络测试"
-              subtitle={
-                networkSpeed 
-                  ? `推荐: ${
-                      networkSpeed.recommended === 'gitea' ? 'Gitea(私有服务器)' : 
-                      networkSpeed.recommended === 'gitee' ? 'Gitee(码云)' : 'GitHub'
-                    }${networkSpeed.gitea !== undefined ? `\nGitea: ${networkSpeed.gitea < 9999 ? networkSpeed.gitea + 'ms' : '连接失败'}` : ''}${
-                      networkSpeed.gitee < 9999 ? `\nGitee: ${networkSpeed.gitee}ms` : '\nGitee: 连接失败'
-                    }${
-                      networkSpeed.github < 9999 ? `\nGitHub: ${networkSpeed.github}ms` : '\nGitHub: 连接失败'
-                    }`
-                  : '测试到各服务器的连接速度'
-              }
-              hasLoading={true}
-              isLoading={testingNetwork}
-              onPress={testNetworkSpeed}
-            />
-          </View>
-
-          {/* 项目链接 */}
-          <View className="mb-6">
-            <Text className="text-white font-semibold text-lg mb-3 px-2">项目链接</Text>
-            
-            {APP_CONFIG.GITEA_URL && (
-              <SettingItem
-                icon="server"
-                title="🏠 Gitea仓库"
-                subtitle="私有服务器，最新更新首发"
-                onPress={openGitea}
-              />
-            )}
-
-            <SettingItem
-              icon="rocket"
-              title="🚀 Gitee仓库"
-              subtitle="适合中国大陆用户访问"
-              onPress={openGitee}
-            />
-
-            <SettingItem
-              icon="github"
-              title="🐙 GitHub仓库"
-              subtitle="国际主流代码托管平台"
-              onPress={openGitHub}
-            />
-          </View>
-
-          {/* 联系我们 */}
-          <View className="mb-6">
-            <Text className="text-white font-semibold text-lg mb-3 px-2">联系我们</Text>
-            
-            <SettingItem
-              icon="comments"
-              title="QQ交流群"
-              subtitle={`群号：${APP_CONFIG.QQ_GROUP}`}
-              onPress={openQQGroup}
-            />
-
-            <SettingItem
-              icon="heart"
-              title="感谢支持"
-              subtitle="感谢你使用我们的应用 ❤️"
-              hasArrow={false}
-            />
-          </View>
-
-          {/* 底部空间 */}
-          <View className="h-20" />
-        </ScrollView>
-      </LinearGradient>
-    </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
-
- 
