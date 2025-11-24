@@ -6,6 +6,10 @@
     "web": {
       "favicon": "./assets/aoe4.png"
     },
+    "updates": {
+      "url": "https://aoe4update.jinze.xyz",
+      "fallbackToCacheTimeout": 0
+    },
     "experiments": {
       "tsconfigPaths": true
     },
