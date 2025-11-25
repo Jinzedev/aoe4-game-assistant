@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, AppState, AppStateStatus } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,7 @@ import { ModernGameCard } from '../components/home/MatchCard';
 import { FilterPill } from '../components/home/FilterPill';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { MonthlyStatsCard } from '../components/home/MonthlyStatsCard';
+import React = require('react');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,9 +42,7 @@ export function HomeScreen() {
     if (!hasInitialRefreshedRef.current) {
       hasInitialRefreshedRef.current = true;
       console.log('🔄 [HomeScreen] 首次进入首页，尝试刷新玩家信息');
-      refreshPlayer().catch((err) =>
-        console.error('❌ [HomeScreen] 首次刷新玩家信息失败:', err)
-      );
+      refreshPlayer().catch((err) => console.error('❌ [HomeScreen] 首次刷新玩家信息失败:', err));
     }
     const currentStateRef: { value: AppStateStatus } = { value: AppState.currentState };
     const handleAppStateChange = (nextState: AppStateStatus) => {
@@ -51,9 +50,7 @@ export function HomeScreen() {
       currentStateRef.value = nextState;
       if ((prevState === 'inactive' || prevState === 'background') && nextState === 'active') {
         console.log('🔄 [HomeScreen] 应用回到前台，自动刷新玩家信息');
-        refreshPlayer().catch((err) =>
-          console.error('❌ [HomeScreen] 前台刷新玩家信息失败:', err)
-        );
+        refreshPlayer().catch((err) => console.error('❌ [HomeScreen] 前台刷新玩家信息失败:', err));
       }
     };
     const subscription = AppState.addEventListener('change', handleAppStateChange);
@@ -264,10 +261,14 @@ export function HomeScreen() {
 
   // 跳转处理
   const handleShowBinding = () => navigation.navigate('AccountBinding');
-  const handleViewAllGames = () => navigation.navigate('MainTabs', { screen: 'History',params: {} });
+  const handleViewAllGames = () =>
+    navigation.navigate('MainTabs', { screen: 'History', params: {} });
   const handleViewGameDetail = (gameId: string) => {
     if (boundPlayer) {
-      navigation.navigate('GameDetail', { gameId: Number(gameId), profileId: boundPlayer.profile_id });
+      navigation.navigate('GameDetail', {
+        gameId: Number(gameId),
+        profileId: boundPlayer.profile_id,
+      });
     }
   };
 
@@ -294,8 +295,23 @@ export function HomeScreen() {
               </Text>
               <TouchableOpacity
                 onPress={handleShowBinding}
-                className="rounded-2xl bg-purple-500 px-8 py-3">
-                <Text className="text-base font-bold text-white">立即绑定</Text>
+                style={{
+                  borderRadius: 16, // rounded-2xl
+                  backgroundColor: '#a855f7', // bg-purple-500
+                  paddingHorizontal: 32, // px-8
+                  paddingVertical: 12, // py-3
+                  alignItems: 'center', // 居中文本
+                  justifyContent: 'center',
+                }}>
+                <Text
+                  style={{
+                    fontSize: 16, // text-base
+                    fontWeight: 'bold', // font-bold
+                    color: '#fff', // text-white
+                    letterSpacing: 1,
+                  }}>
+                  立即绑定
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
