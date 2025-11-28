@@ -13,7 +13,7 @@ import { GameDetailScreen } from '../screens/GameDetailScreen';
 // Components & Types
 import { BottomNavigation } from '../components/BottomNavigation';
 import { RootStackParamList, MainTabParamList } from './types';
-import { AccountBinding } from 'components/home/AccountBinding';
+import { AccountBinding } from '../components/home/AccountBinding';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,13 +24,13 @@ function MainTabs() {
     <Tab.Navigator
       // 关键：使用你自定义的 BottomNavigation 组件
       tabBar={(props) => (
-        <BottomNavigation 
-          activeTab={props.state.routeNames[props.state.index].toLowerCase()} 
+        <BottomNavigation
+          activeTab={props.state.routeNames[props.state.index].toLowerCase()}
           onTabPress={(tabKey) => {
-             // 映射 tabKey (例如 'home') 到路由名称 (例如 'Home')
-             const routeName = tabKey.charAt(0).toUpperCase() + tabKey.slice(1);
-             props.navigation.navigate(routeName as any);
-          }} 
+            // 映射 tabKey (例如 'home') 到路由名称 (例如 'Home')
+            const routeName = tabKey.charAt(0).toUpperCase() + tabKey.slice(1);
+            props.navigation.navigate(routeName as any);
+          }}
         />
       )}
       screenOptions={{ headerShown: false, lazy: true }} // lazy: true 只有点击时才渲染
@@ -50,17 +50,17 @@ export function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {/* 主界面 (Tabs) */}
       <Stack.Screen name="MainTabs" component={MainTabs} />
-      
+
       {/* 模态页面 / 详情页 */}
-      <Stack.Screen 
-        name="GameDetail" 
-        component={GameDetailScreen} 
-        options={{ presentation: 'card', animation: 'slide_from_right' }} 
+      <Stack.Screen
+        name="GameDetail"
+        component={GameDetailScreen}
+        options={{ presentation: 'card', animation: 'slide_from_right' }}
       />
-      <Stack.Screen 
-        name="AccountBinding" 
-        component={AccountBinding} 
-        options={{ presentation: 'modal', animation: 'slide_from_bottom' }} 
+      <Stack.Screen
+        name="AccountBinding"
+        component={AccountBinding}
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
       />
     </Stack.Navigator>
   );
