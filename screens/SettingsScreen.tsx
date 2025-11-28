@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PaintRoller, Hash, MessageCircle } from 'lucide-react-native';
+import { PaintRoller, Hash, MessageCircle, RefreshCw } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { APP_CONFIG } from '../constants/App';
 import { checkExpoUpdate } from '../utils/expoUpdate';
@@ -123,6 +123,14 @@ export function SettingsScreen() {
                           <MessageCircle size={22} color="white" />
                           <Text className="ml-3 text-lg font-bold text-white">立即加入</Text>
                         </LinearGradient>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => checkExpoUpdate()}
+                        activeOpacity={0.7}
+                        className="mt-4 flex-row items-center justify-center rounded-xl border border-white/10 bg-white/5 py-3">
+                        <RefreshCw size={18} color="#94a3b8" />
+                        <Text className="ml-2 text-base font-medium text-slate-400">检查更新</Text>
                       </TouchableOpacity>
                     </View>
                   </LinearGradient>
