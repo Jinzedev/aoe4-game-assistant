@@ -1,142 +1,144 @@
-# 帝国侦察兵
+# 帝国侦察兵 (AoE4 Game Assistant)
 
-这是一个基于React Native和Expo构建的帝国侦察兵应用，为《帝国时代4》玩家提供数据追踪和游戏辅助功能。应用包含多个功能页面：
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Expo](https://img.shields.io/badge/Expo-52.0-blue)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React_Native-0.76-cyan)](https://reactnative.dev/)
 
-## 功能特性
+帝国侦察兵是一款专为《帝国时代4 (Age of Empires IV)》玩家打造的现代化移动端助手应用。它利用 AoE4World API 提供实时数据追踪、战绩查询和游戏辅助功能，帮助玩家更好地了解自己的表现并提升竞技水平。
 
-### 🏠 主页 (HomeScreen)
-- 用户头像和基本信息显示
-- 钻石段位标识和排名
-- 核心数据统计（胜率、总场次、ELO分数）
-- 本月表现统计
-- 最近对战记录展示
+## ✨ 核心功能
 
-### 📊 详细统计 (StatsScreen)
-- 胜率趋势图表
-- 文明使用统计
-- 深入的数据分析
+### 🏠 仪表盘 (Home)
+- **个人概览**：直观展示玩家头像、当前段位（钻石/征服者等）、ELO 分数及全球排名。
+- **核心数据**：实时统计胜率、总场次、连胜/连败状态。
+- **本月表现**：追踪本月的对局数量和胜率变化。
+- **最近战绩**：快速预览最近几场比赛的结果和对手信息。
 
-### 📖 对战历史 (HistoryScreen)
-- 按日期分组的对战记录
-- 胜利/失败状态显示
-- 详细的对局信息
-- 筛选功能
+### 📊 数据分析 (Stats)
+- **胜率趋势**：通过图表可视化展示近期胜率走势。
+- **文明统计**：详细分析各个文明的使用率和胜率，帮助发现擅长和薄弱的文明。
+- **地图分析**：(计划中) 展示不同地图的表现数据。
 
-### 🔍 玩家搜索 (SearchScreen)
-- 搜索其他玩家
-- 查看玩家统计数据
-- 比较不同玩家表现
+### 📖 历史记录 (History)
+- **详细清单**：按日期分组展示所有历史对局。
+- **对局详情**：查看每场比赛的地图、时长、对手信息及分数变化。
+- **智能筛选**：支持按文明、地图或比赛结果筛选记录。
 
-### ⚙️ 设置页面 (SettingsScreen)
-- 应用设置和配置
-- 账户管理
-- 更新检查
+### 🔍 玩家查询 (Search)
+- **全球搜索**：支持搜索任意 AoE4 玩家 ID 或名称。
+- **战绩对比**：查看其他玩家的详细数据和常用战术。
 
-## 技术栈
+### ⚙️ 设置与工具 (Settings)
+- **多语言支持**：(计划中) 支持中英文切换。
+- **更新检查**：内置 GitHub Releases 更新检查功能，确保您始终使用最新版本。
+- **关于应用**：查看版本信息和开发者联系方式。
 
-- **React Native** - 跨平台移动应用框架
-- **Expo** - React Native开发平台
-- **NativeWind** - 基于Tailwind CSS的样式系统
-- **TypeScript** - 类型安全的JavaScript
-- **Expo Vector Icons** - 图标库
-- **Expo Linear Gradient** - 渐变背景支持
+---
 
-## 安装和运行
+## 🛠 技术栈
 
-### 前置要求
-- Node.js (推荐v18或更高版本)
-- npm 或 yarn
-- Expo CLI
-- Expo Go 应用 (在手机上测试)
+本项目采用现代化的 React Native 技术栈构建，注重性能和开发体验：
 
-### 安装步骤
+- **核心框架**: [React Native](https://reactnative.dev/) + [Expo](https://expo.dev/) (CNG Workflow)
+- **编程语言**: [TypeScript](https://www.typescriptlang.org/) (全类型安全)
+- **样式方案**: [NativeWind](https://www.nativewind.dev/) (Tailwind CSS for React Native)
+- **导航库**: [React Navigation v7](https://reactnavigation.org/)
+- **图标库**: [Lucide React Native](https://lucide.dev/) (现代化图标风格)
+- **渐变库**: [Expo Linear Gradient](https://docs.expo.dev/versions/latest/sdk/linear-gradient/)
+- **模糊效果**: [Expo Blur](https://docs.expo.dev/versions/latest/sdk/blur/)
 
-1. 克隆项目并进入目录：
-```bash
-cd my-expo-app
-```
+---
 
-2. 安装依赖：
-```bash
-npm install
-```
+## 🚀 更新机制
 
-3. 启动开发服务器：
-```bash
-npm start
-# 或
-npx expo start
-```
+本项目采用 **GitHub Releases** 作为唯一的应用分发和更新渠道，确保纯净和安全：
 
-4. 使用Expo Go扫描二维码在手机上预览，或选择模拟器运行
+1.  **手动检查**：在“设置”页面点击“检查更新”按钮。
+2.  **版本对比**：应用会通过 GitHub API 获取最新的 Release Tag，并与本地版本进行比对。
+3.  **直接下载**：如果有新版本，应用会引导您跳转到 GitHub Releases 页面直接下载最新的 APK 安装包。
+4.  **无热更新**：为了保持应用体积小巧且逻辑简单，本项目**不包含** EAS Update 热更新功能。
 
-### 可用脚本
+---
 
-- `npm start` - 启动Expo开发服务器
-- `npm run android` - 在Android设备/模拟器上运行
-- `npm run ios` - 在iOS设备/模拟器上运行
-- `npm run web` - 在浏览器中运行
-- `npm run lint` - 运行ESLint检查
-- `npm run format` - 格式化代码
-
-## 项目结构
+## 📂 项目结构
 
 ```
 my-expo-app/
-├── components/          # React Native组件
-│   ├── AccountBinding.tsx   # 账户绑定组件
-│   ├── BottomNavigation.tsx # 底部导航
-│   ├── GameRecord.tsx      # 游戏记录卡片
-│   ├── HistoryScreen.tsx   # 历史记录页面
-│   ├── HomeScreen.tsx      # 主页
-│   ├── SearchResults.tsx   # 搜索结果组件
-│   ├── SearchScreen.tsx    # 搜索页面
-│   ├── SettingsScreen.tsx  # 设置页面
-│   └── StatsScreen.tsx     # 统计页面
-├── services/           # API和数据服务
-│   ├── apiService.ts       # AoE4World API接口
+├── app.json                # Expo 项目配置
+├── App.tsx                 # 应用入口
+├── babel.config.js         # Babel 配置
+├── components/             # UI 组件库
+│   ├── game-detail/        # 比赛详情页组件
+│   ├── home/               # 主页相关组件 (MatchCard, MonthlyStats 等)
+│   ├── stats/              # 统计页相关组件 (CivilizationCard 等)
+│   ├── BottomNavigation.tsx # 底部导航栏
+│   ├── PlayerAvatar.tsx    # 玩家头像组件
+│   ├── SearchResults.tsx   # 搜索结果列表
+│   └── SkeletonLoader.tsx  # 骨架屏加载组件
+├── constants/              # 常量定义
+│   ├── App.ts              # 应用全局常量
+│   └── statsConstants.ts   # 统计相关常量
+├── context/                # React Context
+│   └── PlayerContext.tsx   # 全局玩家状态管理
+├── hook/                   # 自定义 Hooks
+│   └── useAppResources.ts  # 资源加载 Hook
+├── navigation/             # 路由导航配置
+│   ├── AppNavigator.tsx    # 主导航栈
+│   └── types.ts            # 导航类型定义
+├── screens/                # 页面级组件
+│   ├── GameDetailScreen.tsx # 比赛详情页
+│   ├── HistoryScreen.tsx    # 历史记录页
+│   ├── HomeScreen.tsx       # 主页
+│   ├── SearchScreen.tsx     # 搜索页
+│   ├── SettingsScreen.tsx   # 设置页
+│   └── StatsScreen.tsx      # 统计页
+├── services/               # 业务逻辑服务
+│   ├── apiService.ts       # AoE4World API 接口
 │   ├── civilizationImages.ts # 文明图标映射
 │   ├── mapImages.ts        # 地图图标映射
 │   ├── storageService.ts   # 本地存储服务
-│   └── updateService.ts    # 更新检查服务
-├── types/              # TypeScript类型定义
-│   └── index.ts
-├── constants/          # 应用常量
-│   └── App.ts
-├── App.tsx             # 主应用入口
-├── global.css          # 全局样式
-└── package.json        # 项目配置
+│   └── updateService.ts    # (旧) 更新服务
+├── types/                  # TypeScript 类型定义
+└── utils/                  # 工具函数
+    ├── dataAdapter.ts      # 数据转换工具
+    ├── expoUpdate.ts       # GitHub 更新检查逻辑
+    └── gameUtils.ts        # 游戏相关工具函数
 ```
 
-## 设计特色
+## 📦 安装与运行
 
-- **玻璃态设计** - 使用半透明背景和模糊效果
-- **渐变色彩** - 深色主题配合紫色渐变
-- **响应式布局** - 适配不同屏幕尺寸
-- **统一的UI组件** - 可复用的游戏记录卡片
-- **现代化界面** - 圆角设计和柔和阴影
+### 前置要求
+- Node.js (v18+)
+- npm 或 yarn
+- Android Studio (用于模拟器) 或 Android 手机
 
-## 开发说明
+### 开发环境搭建
 
-该应用为《帝国时代4》玩家提供全面的数据追踪和游戏辅助功能。通过集成AoE4World API，为玩家提供实时的游戏数据分析和个人成长追踪。
+1.  **克隆仓库**
+    ```bash
+    git clone https://github.com/Jinzedev/aoe4-game-assistant.git
+    cd aoe4-game-assistant
+    ```
 
-### 主要功能
-- 个人数据统计和排名追踪
-- 游戏历史记录分析
-- 文明使用统计
-- 多平台更新检查
-- 现代化的用户界面
+2.  **安装依赖**
+    ```bash
+    npm install
+    ```
 
-### 组件化设计
-- 使用可复用的组件来展示游戏数据
-- 每个页面独立为单独的组件，便于维护
-- 统一的导航和主题系统
+3.  **启动开发服务器**
+    ```bash
+    npx expo start
+    ```
 
-### 样式系统
-- 使用NativeWind实现Tailwind CSS样式
-- 支持响应式设计
-- 深色主题配合现代化UI设计
+4.  **构建 Release 包 (Android)**
+    ```bash
+    npx expo run:android --variant release
+    ```
 
-## 许可证
+---
 
-MIT License
+## 📄 许可证
+
+本项目基于 [MIT License](LICENSE) 开源。
+
+Copyright (c) 2024 Jinzedev
