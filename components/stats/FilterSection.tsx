@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { ChevronUp, ChevronDown, Map as MapIcon, Globe } from 'lucide-react-native';
 import { SafeImage } from './SafeImage';
 import { getMapInfo, getChineseMapName } from '../../services/mapImages';
 import { getCivilizationInfo } from '../../services/civilizationImages';
@@ -38,6 +38,9 @@ export function FilterSection({
     ? RM_RATING_OPTIONS
     : QM_RATING_OPTIONS;
 
+  const selectedOption = LEADERBOARD_OPTIONS.find((opt) => opt.key === selectedLeaderboard);
+  const SelectedIcon = selectedOption?.icon;
+
   return (
     <View className="mb-4 rounded-3xl bg-white/95 p-6">
       <View className="mb-4 flex-row space-x-4">
@@ -48,47 +51,44 @@ export function FilterSection({
             onPress={() => setShowLeaderboardDropdown(!showLeaderboardDropdown)}
             className="flex-row items-center justify-between rounded-2xl bg-gray-100 px-4 py-3">
             <View className="flex-row items-center">
-              <FontAwesome5
-                name={
-                  LEADERBOARD_OPTIONS.find((opt) => opt.key === selectedLeaderboard)?.icon as any
-                }
-                size={16}
-                color={
-                  LEADERBOARD_OPTIONS.find((opt) => opt.key === selectedLeaderboard)?.color ||
-                  '#6b7280'
-                }
-              />
+              {SelectedIcon && (
+                <SelectedIcon
+                  size={16}
+                  color={selectedOption?.color || '#6b7280'}
+                />
+              )}
               <Text className="ml-2 font-medium text-gray-700">
-                {LEADERBOARD_OPTIONS.find((opt) => opt.key === selectedLeaderboard)?.name ||
-                  '选择模式'}
+                {selectedOption?.name || '选择模式'}
               </Text>
             </View>
-            <FontAwesome5
-              name={showLeaderboardDropdown ? 'chevron-up' : 'chevron-down'}
-              size={12}
-              color="#6b7280"
-            />
+            {showLeaderboardDropdown ? (
+              <ChevronUp size={12} color="#6b7280" />
+            ) : (
+              <ChevronDown size={12} color="#6b7280" />
+            )}
           </TouchableOpacity>
 
           {showLeaderboardDropdown && (
             <View className="absolute left-0 right-0 top-20 z-50 mt-2 rounded-2xl border border-gray-200 bg-white shadow-lg">
-              {/* 这里可以简化渲染逻辑，或者保持原样分两组渲染 */}
               <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled>
-                {LEADERBOARD_OPTIONS.map((option) => (
-                  <TouchableOpacity
-                    key={option.key}
-                    onPress={() => {
-                      onSelectLeaderboard(option.key);
-                      setShowLeaderboardDropdown(false);
-                    }}
-                    className={`flex-row items-center px-3 py-3 ${selectedLeaderboard === option.key ? 'bg-purple-50' : ''}`}>
-                    <FontAwesome5 name={option.icon as any} size={14} color={option.color} />
-                    <Text
-                      className={`ml-2 font-medium ${selectedLeaderboard === option.key ? 'text-purple-700' : 'text-gray-700'}`}>
-                      {option.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {LEADERBOARD_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <TouchableOpacity
+                      key={option.key}
+                      onPress={() => {
+                        onSelectLeaderboard(option.key);
+                        setShowLeaderboardDropdown(false);
+                      }}
+                      className={`flex-row items-center px-3 py-3 ${selectedLeaderboard === option.key ? 'bg-purple-50' : ''}`}>
+                      <Icon size={14} color={option.color} />
+                      <Text
+                        className={`ml-2 font-medium ${selectedLeaderboard === option.key ? 'text-purple-700' : 'text-gray-700'}`}>
+                        {option.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </View>
           )}
@@ -103,11 +103,11 @@ export function FilterSection({
             <Text className="font-medium text-gray-700">
               {ratingOptions.find((opt) => opt.key === selectedRating)?.name || '全部'}
             </Text>
-            <FontAwesome5
-              name={showRatingDropdown ? 'chevron-up' : 'chevron-down'}
-              size={12}
-              color="#6b7280"
-            />
+            {showRatingDropdown ? (
+              <ChevronUp size={12} color="#6b7280" />
+            ) : (
+              <ChevronDown size={12} color="#6b7280" />
+            )}
           </TouchableOpacity>
 
           {showRatingDropdown && (
@@ -142,24 +142,24 @@ export function FilterSection({
           onPress={() => setShowMapDropdown(!showMapDropdown)}
           className="flex-row items-center justify-between rounded-2xl bg-gray-100 px-4 py-3">
           <View className="flex-row items-center">
-            <FontAwesome5 name="map" size={16} color="#6b7280" />
+            <MapIcon size={16} color="#6b7280" />
             <Text className="ml-2 font-medium text-gray-700">
               {selectedMap
                 ? (() => {
-                    const selectedMapData = mapData?.data?.find(
-                      (m) => m && m.map_id === selectedMap
-                    );
-                    const mapName = selectedMapData?.map_name || selectedMapData?.map || '';
-                    return getChineseMapName(mapName) || mapName || '未知地图';
-                  })()
+                  const selectedMapData = mapData?.data?.find(
+                    (m) => m && m.map_id === selectedMap
+                  );
+                  const mapName = selectedMapData?.map_name || selectedMapData?.map || '';
+                  return getChineseMapName(mapName) || mapName || '未知地图';
+                })()
                 : '全部地图'}
             </Text>
           </View>
-          <FontAwesome5
-            name={showMapDropdown ? 'chevron-up' : 'chevron-down'}
-            size={12}
-            color="#6b7280"
-          />
+          {showMapDropdown ? (
+            <ChevronUp size={12} color="#6b7280" />
+          ) : (
+            <ChevronDown size={12} color="#6b7280" />
+          )}
         </TouchableOpacity>
 
         {showMapDropdown && (
@@ -173,7 +173,7 @@ export function FilterSection({
                   setShowMapDropdown(false);
                 }}
                 className={`flex-row items-center px-4 py-3 ${selectedMap === null ? 'bg-purple-50' : ''}`}>
-                <FontAwesome5 name="globe" size={16} color="#6b7280" />
+                <Globe size={16} color="#6b7280" />
                 <Text
                   className={`ml-3 font-medium ${selectedMap === null ? 'text-purple-700' : 'text-gray-700'}`}>
                   全部地图
@@ -207,7 +207,7 @@ export function FilterSection({
                         <View
                           className="mr-3 h-8 w-8 items-center justify-center rounded-lg"
                           style={{ backgroundColor: mapInfo.color }}>
-                          <FontAwesome5 name="map" size={12} color="white" />
+                          <MapIcon size={12} color="white" />
                         </View>
                       )}
                       <View className="flex-1">

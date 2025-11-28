@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { RefreshCw, ArrowDownWideNarrow, AlertCircle, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Context
@@ -26,7 +26,7 @@ export function StatsScreen() {
   const [selectedLeaderboard, setSelectedLeaderboard] = useState('rm_solo');
   const [selectedRating, setSelectedRating] = useState('');
   const [selectedMap, setSelectedMap] = useState<number | null>(null);
-  
+
   // --- 数据状态 ---
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
   const [mapData, setMapData] = useState<MapStatsResponse | null>(null);
@@ -35,10 +35,10 @@ export function StatsScreen() {
 
   // --- 个人数据状态 ---
   const [personalGames, setPersonalGames] = useState<Game[]>([]);
-  const [personalCivStats, setPersonalCivStats] = useState<Map<string, {wins: number, total: number, winRate: number}>>(new Map());
+  const [personalCivStats, setPersonalCivStats] = useState<Map<string, { wins: number, total: number, winRate: number }>>(new Map());
   const [personalLoading, setPersonalLoading] = useState(false);
   const [personalMode, setPersonalMode] = useState<PersonalMode>('rm_solo');
-  const [personalStatsCache, setPersonalStatsCache] = useState<Record<string, { games: Game[], civStats: Map<string, {wins: number, total: number, winRate: number}> }>>({});
+  const [personalStatsCache, setPersonalStatsCache] = useState<Record<string, { games: Game[], civStats: Map<string, { wins: number, total: number, winRate: number }> }>>({});
   const personalModeRef = useRef<PersonalMode>('rm_solo');
 
   // --- API Methods ---
@@ -85,12 +85,12 @@ export function StatsScreen() {
   const fetchPersonalData = async (mode: PersonalMode) => {
     try {
       if (!boundPlayer) return;
-      
+
       if (personalModeRef.current === mode) setPersonalLoading(true);
 
       const gameData = await apiService.getPlayerGames(boundPlayer.profile_id, { limit: 500, leaderboard: mode });
-      const civStatsMap = new Map<string, {wins: number, total: number, winRate: number}>();
-      
+      const civStatsMap = new Map<string, { wins: number, total: number, winRate: number }>();
+
       gameData.games.forEach(game => {
         const playerData = game.teams.flat().find(t => t.player.profile_id === boundPlayer.profile_id);
         if (playerData) {
@@ -157,7 +157,7 @@ export function StatsScreen() {
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient colors={['#0f172a', '#581c87', '#0f172a']} className="flex-1">
-        
+
         {/* Header */}
         <View className="px-6 pb-4 pt-10">
           <View className="flex-row items-center justify-between">
@@ -166,7 +166,7 @@ export function StatsScreen() {
               <Text className="text-white/60">全球文明胜率分析</Text>
             </View>
             <TouchableOpacity className="bg-white/10 rounded-2xl p-3" onPress={fetchCivilizationStats}>
-              <FontAwesome5 name="sync-alt" size={18} color="white" />
+              <RefreshCw size={18} color="white" />
             </TouchableOpacity>
           </View>
         </View>
@@ -174,7 +174,7 @@ export function StatsScreen() {
         <ScrollView className="px-6 flex-1" showsVerticalScrollIndicator={false}>
           {/* 1. 个人数据卡片 */}
           {boundPlayer && (
-            <PersonalStatsCard 
+            <PersonalStatsCard
               player={boundPlayer}
               games={personalGames}
               civStats={personalCivStats}
@@ -185,7 +185,7 @@ export function StatsScreen() {
           )}
 
           {/* 2. 筛选器区域 */}
-          <FilterSection 
+          <FilterSection
             selectedLeaderboard={selectedLeaderboard}
             onSelectLeaderboard={setSelectedLeaderboard}
             selectedRating={selectedRating}
@@ -201,30 +201,30 @@ export function StatsScreen() {
               <View className="flex-1">
                 <Text className="text-lg font-bold text-gray-800">文明胜率排行</Text>
                 <Text className="text-gray-500 text-sm">
-                  {selectedMap 
+                  {selectedMap
                     ? (() => {
-                        const selectedMapData = mapData?.data?.find(m => m && m.map_id === selectedMap);
-                        const mapName = selectedMapData?.map_name || selectedMapData?.map || '';
-                        return `${getChineseMapName(mapName) || mapName} 数据`;
-                      })()
+                      const selectedMapData = mapData?.data?.find(m => m && m.map_id === selectedMap);
+                      const mapName = selectedMapData?.map_name || selectedMapData?.map || '';
+                      return `${getChineseMapName(mapName) || mapName} 数据`;
+                    })()
                     : '全地图数据'
                   }
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <FontAwesome5 name="sort-amount-down" size={14} color="#6b7280" />
+                <ArrowDownWideNarrow size={14} color="#6b7280" />
                 <Text className="text-gray-500 text-sm ml-1">按胜率排序</Text>
               </View>
             </View>
 
             {loading ? (
               <View className="space-y-3 py-4">
-                 <View className="items-center"><ActivityIndicator color="#7c3aed" /></View>
-                 <Text className="text-center text-gray-400">正在分析数据...</Text>
+                <View className="items-center"><ActivityIndicator color="#7c3aed" /></View>
+                <Text className="text-center text-gray-400">正在分析数据...</Text>
               </View>
             ) : error ? (
               <View className="py-8 items-center">
-                <FontAwesome5 name="exclamation-circle" size={32} color="#ef4444" />
+                <AlertCircle size={32} color="#ef4444" />
                 <Text className="text-red-500 text-center mt-3 mb-4">{error}</Text>
                 <TouchableOpacity onPress={fetchCivilizationStats} className="bg-red-500 rounded-2xl px-6 py-3">
                   <Text className="text-white font-medium">重试</Text>
@@ -242,7 +242,7 @@ export function StatsScreen() {
               </View>
             ) : (
               <View className="py-8 items-center">
-                <FontAwesome5 name="search" size={32} color="#9ca3af" />
+                <Search size={32} color="#9ca3af" />
                 <Text className="text-gray-500 text-center mt-3">暂无数据</Text>
               </View>
             )}

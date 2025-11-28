@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, AppState, AppStateStatus } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Link, Trophy, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,7 +15,6 @@ import { ModernGameCard } from '../components/home/MatchCard';
 import { FilterPill } from '../components/home/FilterPill';
 import { HomeHeader } from '../components/home/HomeHeader';
 import { MonthlyStatsCard } from '../components/home/MonthlyStatsCard';
-import React = require('react');
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,7 +35,7 @@ export function HomeScreen() {
   // ===== 刷新逻辑 =====
   const hasInitialRefreshedRef = useRef(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!boundPlayer) return;
 
     if (!hasInitialRefreshedRef.current) {
@@ -58,7 +57,7 @@ export function HomeScreen() {
   }, [boundPlayer, refreshPlayer]);
 
   // 🔥 获取本月表现数据
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchMonthlyStats = async () => {
       if (!boundPlayer) {
         setMonthlyStats(null);
@@ -92,7 +91,7 @@ export function HomeScreen() {
   }, [boundPlayer]);
 
   // 🎮 获取最近对战数据
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchRecentGames = async () => {
       if (!boundPlayer) {
         setRecentGames([]);
@@ -161,31 +160,31 @@ export function HomeScreen() {
 
             const allPlayers = playerTeam
               ? playerTeam.map((p: any) => ({
-                  name: p.player.name,
-                  rating: p.player.rating || 0,
-                  civilization: p.player.civilization,
-                }))
+                name: p.player.name,
+                rating: p.player.rating || 0,
+                civilization: p.player.civilization,
+              }))
               : [
-                  {
-                    name: playerData.name,
-                    rating: playerData.rating || 0,
-                    civilization: playerData.civilization,
-                  },
-                ];
+                {
+                  name: playerData.name,
+                  rating: playerData.rating || 0,
+                  civilization: playerData.civilization,
+                },
+              ];
 
             const allOpponents = opponentTeam
               ? opponentTeam.map((p: any) => ({
-                  name: p.player.name,
-                  rating: p.player.rating || 0,
-                  civilization: p.player.civilization,
-                }))
+                name: p.player.name,
+                rating: p.player.rating || 0,
+                civilization: p.player.civilization,
+              }))
               : [
-                  {
-                    name: opponentData.name,
-                    rating: opponentData.rating || 0,
-                    civilization: opponentData.civilization,
-                  },
-                ];
+                {
+                  name: opponentData.name,
+                  rating: opponentData.rating || 0,
+                  civilization: opponentData.civilization,
+                },
+              ];
 
             return {
               gameId: game.game_id.toString(),
@@ -215,7 +214,7 @@ export function HomeScreen() {
   }, [boundPlayer]);
 
   // 筛选逻辑
-  const filterGames = React.useCallback(
+  const filterGames = useCallback(
     (filter: string) => {
       if (!allGames.length) return;
       let filteredGames = [...allGames];
@@ -244,12 +243,12 @@ export function HomeScreen() {
     [allGames]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     filterGames(selectedFilter);
   }, [selectedFilter, filterGames]);
 
   // 自动设置模式
-  React.useEffect(() => {
+  useEffect(() => {
     if (!boundPlayer?.leaderboards) return;
     const lb = boundPlayer.leaderboards;
     if (lb.rm_solo) setSelectedMode('rm_solo');
@@ -287,7 +286,7 @@ export function HomeScreen() {
           {showSkeleton ? (
             <View className="mb-6 items-center rounded-3xl bg-white/95 p-8 shadow-lg">
               <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-purple-100">
-                <FontAwesome5 name="link" size={24} color="#7c3aed" />
+                <Link size={24} color="#7c3aed" />
               </View>
               <Text className="mb-2 text-lg font-bold text-gray-800">绑定游戏账户</Text>
               <Text className="mb-6 text-center text-sm leading-5 text-gray-500">
@@ -344,7 +343,7 @@ export function HomeScreen() {
                   <FilterPill
                     label="胜利"
                     value="wins"
-                    icon="trophy"
+                    Icon={Trophy}
                     color="#10b981"
                     onSelect={setSelectedFilter}
                     isSelected={selectedFilter === 'wins'}
@@ -352,7 +351,7 @@ export function HomeScreen() {
                   <FilterPill
                     label="失败"
                     value="losses"
-                    icon="times"
+                    Icon={X}
                     color="#ef4444"
                     onSelect={setSelectedFilter}
                     isSelected={selectedFilter === 'losses'}

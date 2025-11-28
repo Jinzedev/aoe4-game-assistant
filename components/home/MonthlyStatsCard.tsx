@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Trophy, Gamepad2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 // 假设 MonthlyStats 类型可以从 apiService 导入，但此处我们只使用接口
-import { MonthlyStats } from '../../services/apiService'; 
+import { MonthlyStats } from '../../services/apiService';
 
 interface MonthlyStatsCardProps {
   monthlyStats: MonthlyStats | null;
@@ -32,7 +32,7 @@ export function MonthlyStatsCard({ monthlyStats, isLoadingStats }: MonthlyStatsC
             <LinearGradient colors={['#e0f2fe', '#b3e5fc']} style={{ borderRadius: 15, padding: 20 }}>
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-cyan-700 font-bold text-sm">本月胜率</Text>
-                <FontAwesome5 name="trophy" size={14} color="#0891b2" />
+                <Trophy size={16} color="#0891b2" />
               </View>
               <Text className="text-3xl font-bold text-cyan-900 mb-2">{monthlyStats ? `${monthlyStats.winRate.toFixed(1)}%` : '--'}</Text>
               <Text className="text-cyan-700 text-xs font-semibold">{monthlyStats ? `${monthlyStats.wins}胜${monthlyStats.losses}负` : '暂无数据'}</Text>
@@ -42,7 +42,7 @@ export function MonthlyStatsCard({ monthlyStats, isLoadingStats }: MonthlyStatsC
             <LinearGradient colors={['#f3e8ff', '#e9d5ff']} style={{ borderRadius: 15, padding: 20 }}>
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-purple-700 font-bold text-sm">本月场次</Text>
-                <FontAwesome5 name="gamepad" size={14} color="#7c3aed" />
+                <Gamepad2 size={16} color="#7c3aed" />
               </View>
               <Text className="text-3xl font-bold text-purple-900 mb-2">{monthlyStats ? monthlyStats.totalGames : '--'}</Text>
               <Text className="text-purple-700 text-xs font-semibold">{monthlyStats && monthlyStats.totalGames > 0 ? '保持活跃' : '尚未开始'}</Text>

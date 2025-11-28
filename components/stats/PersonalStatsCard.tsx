@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Flag, Info } from 'lucide-react-native';
 import { SafeImage } from './SafeImage';
 import { getCivilizationInfo } from '../../services/civilizationImages';
 import { SearchResult } from '../../types';
@@ -10,7 +10,7 @@ import { PERSONAL_MODE_OPTIONS, PersonalMode } from '../../constants/statsConsta
 interface PersonalStatsCardProps {
   player: SearchResult;
   games: Game[];
-  civStats: Map<string, {wins: number, total: number, winRate: number}>;
+  civStats: Map<string, { wins: number, total: number, winRate: number }>;
   loading: boolean;
   mode: PersonalMode;
   onModeChange: (mode: PersonalMode) => void;
@@ -78,38 +78,38 @@ export function PersonalStatsCard({ player, games, civStats, loading, mode, onMo
       ) : civStats.size > 0 ? (
         <View className="space-y-3">
           {Array.from(civStats.entries())
-            .sort(([,a], [,b]) => b.total - a.total)
+            .sort(([, a], [, b]) => b.total - a.total)
             .slice(0, 6)
             .map(([civilization, stats], index) => {
               const civInfo = getCivilizationInfo(civilization);
               // 个人统计也使用类似的金/银/铜配色，但简单处理
               const rankColors = ['#f59e0b', '#3b82f6', '#cd7f32', '#8b5cf6', '#06b6d4', '#10b981'];
               const rankColor = rankColors[index] || '#6b7280';
-              
+
               return (
                 <View key={civilization} className="bg-gray-50 rounded-2xl p-4">
                   <View className="flex-row items-center">
-                    <View 
+                    <View
                       className="w-8 h-8 rounded-full items-center justify-center mr-3"
                       style={{ backgroundColor: rankColor }}
                     >
                       <Text className="text-white font-bold text-sm">{index + 1}</Text>
                     </View>
-                    
-                    <SafeImage 
-                      source={{ uri: civInfo.imageUrl }} 
+
+                    <SafeImage
+                      source={{ uri: civInfo.imageUrl }}
                       className="w-10 h-10 rounded-xl mr-3"
                       resizeMode="cover"
-                      fallback={<View className="w-10 h-10 rounded-xl mr-3 bg-gray-200 items-center justify-center"><FontAwesome5 name="flag" size={16} color="#6b7280" /></View>}
+                      fallback={<View className="w-10 h-10 rounded-xl mr-3 bg-gray-200 items-center justify-center"><Flag size={16} color="#6b7280" /></View>}
                     />
-                    
+
                     <View className="flex-1">
                       <Text className="font-bold text-gray-800">{civInfo.name}</Text>
                       <Text className="text-gray-600 text-sm">
                         {stats.total}场 • {stats.wins}胜{stats.total - stats.wins}负
                       </Text>
                     </View>
-                    
+
                     <View className="items-end">
                       <Text className="text-xl font-bold" style={{ color: rankColor }}>
                         {stats.winRate.toFixed(1)}%
@@ -117,10 +117,10 @@ export function PersonalStatsCard({ player, games, civStats, loading, mode, onMo
                       <Text className="text-gray-500 text-xs">胜率</Text>
                     </View>
                   </View>
-                  
+
                   <View className="mt-3">
                     <View className="w-full bg-gray-200 rounded-full h-2">
-                      <View 
+                      <View
                         className="h-2 rounded-full"
                         style={{ width: `${Math.min(stats.winRate, 100)}%`, backgroundColor: rankColor }}
                       />
@@ -132,7 +132,7 @@ export function PersonalStatsCard({ player, games, civStats, loading, mode, onMo
         </View>
       ) : (
         <View className="py-10 items-center rounded-2xl bg-gray-50">
-          <FontAwesome5 name="info-circle" size={20} color="#9ca3af" />
+          <Info size={20} color="#9ca3af" />
           <Text className="text-gray-500 text-sm mt-2">暂无{currentModeLabel}模式数据</Text>
         </View>
       )}

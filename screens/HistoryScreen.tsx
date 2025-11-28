@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Trophy, X, UserX, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,16 +41,16 @@ export function HistoryScreen() {
       try {
         // 获取更多历史游戏记录
         const gamesResponse = await apiService.getPlayerGames(targetPlayer.profile_id, {
-          limit: 100 
+          limit: 100
         });
-        
+
         const formattedGames = gamesResponse.games
           .filter(game => game.teams && game.teams.length > 0)
           .map(game => {
             let playerData = null;
             let playerTeam = null;
             let opponentTeam = null;
-            
+
             for (let teamIndex = 0; teamIndex < game.teams.length; teamIndex++) {
               const team = game.teams[teamIndex];
               if (Array.isArray(team)) {
@@ -65,22 +65,22 @@ export function HistoryScreen() {
                 if (playerData) break;
               }
             }
-            
+
             if (!playerData || !opponentTeam) return null;
-            
+
             const isWin = playerData.result === 'win';
             const eloChange = playerData.rating_diff || 0;
             const duration = game.duration ? `${Math.floor(game.duration / 60)}分钟` : '--';
-            
+
             // 计算时间差
             const gameDate = new Date(game.started_at);
             const now = new Date();
             const diffTime = Math.abs(now.getTime() - gameDate.getTime());
-            
+
             const diffMinutes = Math.floor(diffTime / (1000 * 60));
             const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
+
             let timeAgo = '';
             if (diffMinutes < 1) {
               timeAgo = '刚刚';
@@ -101,9 +101,9 @@ export function HistoryScreen() {
                 timeAgo = `${diffMonths}个月前`;
               }
             }
-            
+
             const isInvalidGame = ((game.duration && game.duration < 300) || playerData.result === null);
-            
+
             let gameMode = 'RM 1v1';
             if (game.kind) {
               if (game.kind.includes('1v1')) gameMode = 'RM 1v1';
@@ -117,42 +117,42 @@ export function HistoryScreen() {
               else if (teamSize === 3) gameMode = 'RM 3v3';
               else if (teamSize === 4) gameMode = 'RM 4v4';
             }
-            
+
             if (isInvalidGame) {
               gameMode += ' (Invalid)';
             }
-            
-             const players = playerTeam ? playerTeam.map((p: any) => ({
-               name: p.player.name,
-               rating: p.player.rating || 0,
-               civilization: p.player.civilization
-             })) : [];
-             
-             const opponents = opponentTeam ? opponentTeam.map((p: any) => ({
-               name: p.player.name,
-               rating: p.player.rating || 0,
-               civilization: p.player.civilization
-             })) : [];
 
-             return {
-               gameId: game.game_id || Math.random().toString(), 
-               realGameId: game.game_id, 
-               mapName: game.map || 'Unknown',
-               gameMode,
-               duration,
-               isWin,
-               players,
-               opponents,
-               eloChange,
-               timeAgo,
-               startedAt: game.started_at,
-               isTeamGame: playerTeam ? playerTeam.length > 1 : false,
-               civilization: playerData.civilization,
-               opponentCivilization: opponents[0]?.civilization,
-             };
+            const players = playerTeam ? playerTeam.map((p: any) => ({
+              name: p.player.name,
+              rating: p.player.rating || 0,
+              civilization: p.player.civilization
+            })) : [];
+
+            const opponents = opponentTeam ? opponentTeam.map((p: any) => ({
+              name: p.player.name,
+              rating: p.player.rating || 0,
+              civilization: p.player.civilization
+            })) : [];
+
+            return {
+              gameId: game.game_id || Math.random().toString(),
+              realGameId: game.game_id,
+              mapName: game.map || 'Unknown',
+              gameMode,
+              duration,
+              isWin,
+              players,
+              opponents,
+              eloChange,
+              timeAgo,
+              startedAt: game.started_at,
+              isTeamGame: playerTeam ? playerTeam.length > 1 : false,
+              civilization: playerData.civilization,
+              opponentCivilization: opponents[0]?.civilization,
+            };
           })
           .filter(game => game !== null);
-        
+
         setAllGames(formattedGames);
       } catch (error) {
         console.error('❌ 获取历史游戏数据失败:', error);
@@ -181,13 +181,13 @@ export function HistoryScreen() {
   // 分组游戏
   const groupedGames = useMemo(() => {
     const groups: { [key: string]: any[] } = {};
-    
+
     filteredGames.forEach(game => {
       const gameDate = new Date(game.startedAt);
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      
+
       let groupKey = '';
       if (gameDate.toDateString() === today.toDateString()) {
         groupKey = '今天';
@@ -196,13 +196,13 @@ export function HistoryScreen() {
       } else {
         groupKey = gameDate.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
       }
-      
+
       if (!groups[groupKey]) {
         groups[groupKey] = [];
       }
       groups[groupKey].push({ ...game, realGameId: Number(game.realGameId) });
     });
-    
+
     return groups;
   }, [filteredGames]);
 
@@ -220,8 +220,8 @@ export function HistoryScreen() {
     <View className="flex-1 bg-slate-900">
       <LinearGradient colors={['#0f172a', '#581c87', '#0f172a']} className="flex-1">
         <View className="px-6 pb-4 pt-10">
-            <View>
-              <Text className="text-2xl font-bold text-white">对战历史</Text>
+          <View>
+            <Text className="text-2xl font-bold text-white">对战历史</Text>
             {targetPlayer ? (
               <Text className="text-white/60">
                 {targetPlayer.name} 的征战历程
@@ -238,8 +238,8 @@ export function HistoryScreen() {
               <FilterPill label={`全部 (${filteredGames.length})`} value="all" onSelect={setSelectedFilter} isSelected={selectedFilter === 'all'} />
               <FilterPill label="1v1" value="1v1" onSelect={setSelectedFilter} isSelected={selectedFilter === '1v1'} />
               <FilterPill label="团队" value="team" onSelect={setSelectedFilter} isSelected={selectedFilter === 'team'} />
-              <FilterPill label="胜利" value="wins" icon="trophy" color="#10b981" onSelect={setSelectedFilter} isSelected={selectedFilter === 'wins'} />
-              <FilterPill label="失败" value="losses" icon="times" color="#ef4444" onSelect={setSelectedFilter} isSelected={selectedFilter === 'losses'} />
+              <FilterPill label="胜利" value="wins" Icon={Trophy} color="#10b981" onSelect={setSelectedFilter} isSelected={selectedFilter === 'wins'} />
+              <FilterPill label="失败" value="losses" Icon={X} color="#ef4444" onSelect={setSelectedFilter} isSelected={selectedFilter === 'losses'} />
             </View>
           </ScrollView>
         </View>
@@ -260,12 +260,12 @@ export function HistoryScreen() {
             </View>
           ) : !targetPlayer ? (
             <View className="bg-white/95 rounded-3xl p-6 items-center">
-              <FontAwesome5 name="user-slash" size={32} color="#9ca3af" />
+              <UserX size={32} color="#9ca3af" />
               <Text className="text-gray-500 text-center mt-3">请先绑定玩家账号</Text>
             </View>
           ) : Object.keys(groupedGames).length === 0 ? (
             <View className="bg-white/95 rounded-3xl p-6 items-center">
-              <FontAwesome5 name="search" size={32} color="#9ca3af" />
+              <Search size={32} color="#9ca3af" />
               <Text className="text-gray-500 text-center mt-3">暂无对战记录</Text>
             </View>
           ) : (

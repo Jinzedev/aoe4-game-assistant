@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Server, Clock, Calendar, Trophy, TrendingUp } from 'lucide-react-native';
 
 interface GameDetailInfoCardProps {
   serverName: string;
@@ -30,14 +30,14 @@ export function GameDetailInfoCard({
       <View className="mb-4 flex-row">
         <View className="mr-2 flex-1 rounded-2xl bg-gray-50 p-4">
           <View className="mb-2 flex-row items-center">
-            <FontAwesome5 name="server" size={16} color="#6b7280" />
+            <Server size={16} color="#6b7280" />
             <Text className="ml-2 text-sm text-gray-600">服务器</Text>
           </View>
           <Text className="text-base font-semibold text-gray-800">{serverName}</Text>
         </View>
         <View className="ml-2 flex-1 rounded-2xl bg-gray-50 p-4">
           <View className="mb-2 flex-row items-center">
-            <FontAwesome5 name="clock" size={16} color="#6b7280" />
+            <Clock size={16} color="#6b7280" />
             <Text className="ml-2 text-sm text-gray-600">游戏时长</Text>
           </View>
           <Text className="text-base font-semibold text-gray-800">{duration}</Text>
@@ -47,14 +47,14 @@ export function GameDetailInfoCard({
       <View className="mb-4 flex-row">
         <View className="mr-2 flex-1 rounded-2xl bg-gray-50 p-4">
           <View className="mb-2 flex-row items-center">
-            <FontAwesome5 name="calendar" size={16} color="#6b7280" />
+            <Calendar size={16} color="#6b7280" />
             <Text className="ml-2 text-sm text-gray-600">游戏时间</Text>
           </View>
           <Text className="text-base font-semibold text-gray-800">{timeAgo}</Text>
         </View>
         <View className="ml-2 flex-1 rounded-2xl bg-gray-50 p-4">
           <View className="mb-2 flex-row items-center">
-            <FontAwesome5 name="trophy" size={16} color="#6b7280" />
+            <Trophy size={16} color="#6b7280" />
             <Text className="ml-2 text-sm text-gray-600">赛季</Text>
           </View>
           <Text className="text-base font-semibold text-gray-800">赛季 {season || '未知'}</Text>
@@ -64,19 +64,17 @@ export function GameDetailInfoCard({
       <View className="rounded-2xl bg-blue-50 p-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <FontAwesome5 name="chart-line" size={16} color="#3b82f6" />
+            <TrendingUp size={16} color="#3b82f6" />
             <Text className="ml-2 text-sm font-medium text-blue-600">我的分数</Text>
           </View>
           <View className="flex-row items-center">
             <Text className="mr-2 text-2xl font-bold text-blue-600">{rating || 0}</Text>
             <View
-              className={`rounded-full px-3 py-1 ${
-                isInvalidGame ? 'bg-gray-200' : isWin ? 'bg-green-200' : 'bg-red-200'
-              }`}>
-              <Text
-                className={`text-sm font-bold ${
-                  isInvalidGame ? 'text-gray-600' : isWin ? 'text-green-700' : 'text-red-700'
+              className={`rounded-full px-3 py-1 ${isInvalidGame ? 'bg-gray-200' : isWin ? 'bg-green-200' : 'bg-red-200'
                 }`}>
+              <Text
+                className={`text-sm font-bold ${isInvalidGame ? 'text-gray-600' : isWin ? 'text-green-700' : 'text-red-700'
+                  }`}>
                 {isInvalidGame
                   ? '--'
                   : ratingDiff

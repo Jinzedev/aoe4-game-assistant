@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { LogOut, User } from 'lucide-react-native';
 import { SearchResult } from '../../types';
 // 导入所有需要的工具函数
-import { formatRankLevel, getRankIcon, getCountryFlag } from '../../services/apiService'; 
+import { formatRankLevel, getRankIcon, getCountryFlag } from '../../services/apiService';
 // 假设 PlayerAvatar 和 SkeletonLoader 位于 components 目录下
-import { PlayerAvatar } from '../PlayerAvatar'; 
-import { SkeletonLoader } from '../SkeletonLoader'; 
+import { PlayerAvatar } from '../PlayerAvatar';
+import { SkeletonLoader } from '../SkeletonLoader';
 
 type LeaderboardMode = 'rm_solo' | 'rm_team' | 'qm_4v4';
 
@@ -28,7 +27,7 @@ const getCurrentModeEntry = (data: SearchResult | undefined, mode: LeaderboardMo
 
 
 export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onUnbind, showSkeleton }: HomeHeaderProps) {
-  
+
   if (showSkeleton) {
     // 渲染骨架屏，注意：未绑定账户的提示卡片仍然留在 HomeScreen 的 ScrollView 中
     return (
@@ -39,9 +38,9 @@ export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onU
       </View>
     );
   }
-  
+
   // 确保数据存在
-  if (!boundPlayerData) return null; 
+  if (!boundPlayerData) return null;
 
   const currentModeEntry = getCurrentModeEntry(boundPlayerData, selectedMode);
 
@@ -49,12 +48,12 @@ export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onU
     <View className="px-6 pb-6 pt-10">
       <View className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl">
         {onUnbind && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={onUnbind}
             style={{ position: 'absolute', top: 12, right: 12, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.1)', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
             activeOpacity={0.6}
           >
-            <FontAwesome5 name="sign-out-alt" size={14} color="#a1a1aa" />
+            <LogOut size={16} color="#a1a1aa" />
           </TouchableOpacity>
         )}
 
@@ -64,7 +63,7 @@ export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onU
               <PlayerAvatar uri={boundPlayerData.avatars.medium} size={64} />
             ) : (
               <View className="w-16 h-16 bg-gray-400 rounded-2xl border-2 border-white/20 flex items-center justify-center">
-                <FontAwesome5 name="user" size={24} color="#ffffff" />
+                <User size={32} color="#ffffff" />
               </View>
             )}
             {boundPlayerData.country && (

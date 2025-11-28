@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { SafeImage } from './SafeImage'; 
+import { Crown, Medal, Swords } from 'lucide-react-native';
+import { SafeImage } from './SafeImage';
 import { getCivilizationInfo } from '../../services/civilizationImages';
 import { CivilizationStats } from '../../services/apiService';
 
@@ -13,8 +13,8 @@ interface CivilizationCardProps {
 export function CivilizationCard({ civ, rank }: CivilizationCardProps) {
   const civInfo = getCivilizationInfo(civ.civilization);
   const civImage = civInfo.imageUrl;
-  
-  const rankColor = '#6366f1'; 
+
+  const rankColor = '#6366f1';
 
   return (
     <View className="mb-3">
@@ -23,21 +23,21 @@ export function CivilizationCard({ civ, rank }: CivilizationCardProps) {
         style={{ borderWidth: 1, borderColor: '#e5e7eb' }}
       >
         <View className="flex-row items-center">
-          
+
           {/* 排名徽章 */}
           <View className="w-10 items-center justify-center mr-2">
             {rank === 1 ? (
               <View className="items-center justify-center shadow-sm">
-                <FontAwesome5 name="crown" size={22} color="#fbbf24" />
+                <Crown size={22} color="#fbbf24" />
               </View>
             ) : rank === 2 ? (
               <View className="items-center justify-center">
-                <FontAwesome5 name="medal" size={20} color="#94a3b8" />
+                <Medal size={20} color="#94a3b8" />
                 <Text className="text-[10px] font-bold text-slate-500 absolute pt-1">2</Text>
               </View>
             ) : rank === 3 ? (
               <View className="items-center justify-center">
-                <FontAwesome5 name="medal" size={20} color="#b45309" />
+                <Medal size={20} color="#b45309" />
                 <Text className="text-[10px] font-bold text-amber-100 absolute pt-1">3</Text>
               </View>
             ) : (
@@ -48,19 +48,19 @@ export function CivilizationCard({ civ, rank }: CivilizationCardProps) {
           </View>
 
           {/* 文明图片 */}
-          <View 
+          <View
             className="w-12 h-12 rounded-full overflow-hidden mr-4 bg-white items-center justify-center"
             style={{ borderWidth: 2, borderColor: '#e5e7eb' }}
           >
             {civImage ? (
-              <SafeImage 
+              <SafeImage
                 source={{ uri: civImage }}
                 className="w-full h-full"
                 resizeMode="cover"
-                fallback={<FontAwesome5 name="chess-pawn" size={20} color="#6b7280" />}
+                fallback={<Swords size={20} color="#6b7280" />}
               />
             ) : (
-              <FontAwesome5 name="chess-pawn" size={20} color="#6b7280" />
+              <Swords size={20} color="#6b7280" />
             )}
           </View>
 
@@ -72,7 +72,7 @@ export function CivilizationCard({ civ, rank }: CivilizationCardProps) {
                 {(civ.win_rate || 0).toFixed(1)}%
               </Text>
             </View>
-            
+
             <View className="flex-row items-center space-x-4">
               <Text className="text-sm text-gray-600">
                 {(civ.games_count || 0).toLocaleString()}场比赛
@@ -81,12 +81,12 @@ export function CivilizationCard({ civ, rank }: CivilizationCardProps) {
                 使用率 {(civ.pick_rate || 0).toFixed(1)}%
               </Text>
             </View>
-            
+
             <View className="mt-3">
               <View className="w-full bg-gray-200 rounded-full h-2">
-                <View 
+                <View
                   className="h-2 rounded-full"
-                  style={{ 
+                  style={{
                     width: `${Math.min(civ.win_rate || 0, 100)}%`,
                     backgroundColor: rankColor
                   }}

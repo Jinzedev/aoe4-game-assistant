@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Map } from 'lucide-react-native';
 
 interface MatchInfoCardProps {
   mapName: string;               // 地图名称
@@ -69,7 +69,7 @@ export function MatchInfoCard({
               resizeMode="cover"
             />
           ) : (
-            <FontAwesome5 name="map" size={24} color="white" />
+            <Map size={24} color="white" />
           )}
         </View>
         <View>

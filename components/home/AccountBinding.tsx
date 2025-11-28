@@ -1,7 +1,7 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Image, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { ArrowLeft, X, UserPlus, Search, UserCircle, Info } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiService } from '../../services/apiService';
 import { usePlayer } from '../../context/PlayerContext'; // 请根据你的项目实际路径调整
@@ -69,7 +69,7 @@ export function AccountBinding() {
             justifyContent: 'center',
           }}
         >
-          <FontAwesome5 name={showResults ? "arrow-left" : "times"} size={20} color="white" />
+          {showResults ? <ArrowLeft size={24} color="white" /> : <X size={24} color="white" />}
         </TouchableOpacity>
       </View>
 
@@ -94,7 +94,7 @@ export function AccountBinding() {
                   backgroundColor: 'rgba(168,85,247,0.14)',
                   alignItems: 'center', justifyContent: 'center', marginBottom: 6,
                 }}>
-                  <FontAwesome5 name="user-plus" size={32} color="#a855f7" />
+                  <UserPlus size={32} color="#a855f7" />
                 </View>
                 <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 3 }}>绑定游戏账户</Text>
                 <Text style={{
@@ -140,7 +140,7 @@ export function AccountBinding() {
                   {isSearching ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <FontAwesome5 name="search" size={20} color="#fff" />
+                    <Search size={20} color="#fff" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -168,7 +168,7 @@ export function AccountBinding() {
                     {player.avatars && player.avatars.small ? (
                       <Image source={{ uri: player.avatars.small }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
                     ) : (
-                      <FontAwesome5 name="user-circle" size={32} color="#8884d9" style={{ marginRight: 8 }} />
+                      <UserCircle size={36} color="#8884d9" style={{ marginRight: 8 }} />
                     )}
                     <View>
                       <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17 }}>{player.name}</Text>
@@ -196,7 +196,7 @@ export function AccountBinding() {
               flexDirection: 'row',
               alignItems: 'center',
             }}>
-              <FontAwesome5 name="info-circle" size={16} color="#60a5fa" />
+              <Info size={16} color="#60a5fa" />
               <Text style={{
                 color: '#60a5fa',
                 marginLeft: 8,

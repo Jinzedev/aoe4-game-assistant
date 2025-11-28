@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { Crown, MinusCircle, Skull } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getMapInfo, getChineseMapName } from '../../services/mapImages';
 import { getCivilizationInfo } from '../../services/civilizationImages';
@@ -12,14 +12,14 @@ interface ModernGameCardProps {
 
 export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
   const { isWin, mapName, gameMode, duration, timeAgo, players, opponents, eloChange } = game;
-  
+
   const isInvalid = gameMode.includes('(Invalid)');
 
   // 配色方案
-  const theme = isInvalid 
+  const theme = isInvalid
     ? { color: '#9ca3af', gradient: ['#f3f4f6', '#e5e7eb'], text: 'text-gray-500', label: '无效', badgeBg: 'bg-gray-200' }
-    : isWin 
-      ? { color: '#10b981', gradient: ['#ecfdf5', '#d1fae5'], text: 'text-emerald-700', label: '胜利', badgeBg: 'bg-emerald-500' } 
+    : isWin
+      ? { color: '#10b981', gradient: ['#ecfdf5', '#d1fae5'], text: 'text-emerald-700', label: '胜利', badgeBg: 'bg-emerald-500' }
       : { color: '#ef4444', gradient: ['#fef2f2', '#fee2e2'], text: 'text-rose-700', label: '失败', badgeBg: 'bg-rose-500' };
 
   // 获取地图与中文名
@@ -27,8 +27,8 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
   const mapChineseName = getChineseMapName(mapName);
 
   return (
-    <TouchableOpacity 
-      activeOpacity={0.85} 
+    <TouchableOpacity
+      activeOpacity={0.85}
       onPress={onPress}
       className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden border border-slate-100"
       style={{ elevation: 2 }}
@@ -36,11 +36,10 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
       {/* 1. 顶部通栏：地图背景 + 关键信息 */}
       <View className="h-16 relative">
         {/* 地图背景图 */}
-        <Image 
-          // ✅ 这里的修复是正确的
-          source={{ uri: mapInfo.imageUrl || '' }} 
+        <Image
+          source={{ uri: mapInfo.imageUrl || '' }}
           className="absolute w-full h-full"
-          style={{ opacity: 0.8 }} 
+          style={{ opacity: 0.8 }}
           resizeMode="cover"
         />
         {/* 渐变遮罩 */}
@@ -50,7 +49,7 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
           end={{ x: 1, y: 0 }}
           className="absolute w-full h-full"
         />
-        
+
         {/* 顶部内容行 */}
         <View className="flex-row justify-between items-center px-4 h-full">
           <View>
@@ -64,7 +63,13 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
 
           {/* 结果徽章 */}
           <View className={`${theme.badgeBg} px-3 py-1 rounded-full flex-row items-center shadow-sm`}>
-            <FontAwesome5 name={isWin ? "crown" : isInvalid ? "minus-circle" : "skull"} size={10} color="white" style={{marginRight: 4}} />
+            {isWin ? (
+              <Crown size={12} color="white" style={{ marginRight: 4 }} />
+            ) : isInvalid ? (
+              <MinusCircle size={12} color="white" style={{ marginRight: 4 }} />
+            ) : (
+              <Skull size={12} color="white" style={{ marginRight: 4 }} />
+            )}
             <Text className="text-white text-xs font-bold uppercase tracking-widest">
               {theme.label}
             </Text>
@@ -75,7 +80,7 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
       {/* 2. 下半部分：对战详情 */}
       <View className="p-3 bg-white">
         <View className="flex-row items-start">
-          
+
           {/* 左侧：我方队伍 */}
           <View className="flex-1 pr-2">
             {players.map((p: any, i: number) => {
@@ -87,13 +92,12 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
                       {p.name}
                     </Text>
                     <Text className="text-slate-400 text-[10px] font-medium">
-                       {p.rating}
+                      {p.rating}
                     </Text>
                   </View>
                   {/* 文明图标 */}
-                  <Image 
-                    // 🔧 修复点 1：添加 || '' 防止 null 类型报错
-                    source={{ uri: civInfo.imageUrl || '' }} 
+                  <Image
+                    source={{ uri: civInfo.imageUrl || '' }}
                     className="w-6 h-6 rounded border border-slate-100 bg-slate-50"
                     resizeMode="cover"
                   />
@@ -113,7 +117,7 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
                 </Text>
               </View>
             )}
-             <Text className="text-[10px] text-slate-300 mt-1">{timeAgo}</Text>
+            <Text className="text-[10px] text-slate-300 mt-1">{timeAgo}</Text>
           </View>
 
           {/* 右侧：敌方队伍 */}
@@ -122,10 +126,9 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
               const civInfo = getCivilizationInfo(o.civilization);
               return (
                 <View key={`o-${i}`} className="flex-row items-center justify-start mb-2">
-                   {/* 文明图标 */}
-                   <Image 
-                    // 🔧 修复点 2：添加 || '' 防止 null 类型报错
-                    source={{ uri: civInfo.imageUrl || '' }} 
+                  {/* 文明图标 */}
+                  <Image
+                    source={{ uri: civInfo.imageUrl || '' }}
                     className="w-6 h-6 rounded border border-slate-100 bg-slate-50"
                     resizeMode="cover"
                   />
@@ -134,7 +137,7 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
                       {o.name}
                     </Text>
                     <Text className="text-slate-400 text-[10px] font-medium">
-                       {o.rating}
+                      {o.rating}
                     </Text>
                   </View>
                 </View>
@@ -143,7 +146,7 @@ export function ModernGameCard({ game, onPress }: ModernGameCardProps) {
           </View>
 
         </View>
-        
+
         {/* 底部装饰条 */}
         <View className={`h-0.5 w-1/3 self-center mt-1 rounded-full opacity-20 ${isWin ? 'bg-emerald-500' : 'bg-rose-500'}`} />
       </View>

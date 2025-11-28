@@ -1,11 +1,10 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { PaintRoller, Hash, MessageCircle } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { APP_CONFIG } from '../constants/App';
-import { checkExpoUpdate } from 'utils/expoUpdate';
+import { checkExpoUpdate } from '../utils/expoUpdate';
 
 export function SettingsScreen() {
   // 支持网页复制与原生提示
@@ -59,7 +58,7 @@ export function SettingsScreen() {
                     {/* 上半部分 */}
                     <View className="items-center p-8">
                       <View className="mb-8 h-24 w-24 items-center justify-center rounded-full bg-purple-700/30 ring-8 ring-purple-600/30">
-                        <FontAwesome5 name="paint-roller" size={40} color="#c084fc" />
+                        <PaintRoller size={40} color="#c084fc" />
                       </View>
                       <Text className="mb-2 text-2xl font-extrabold tracking-wide text-white">
                         功能施工中
@@ -102,7 +101,7 @@ export function SettingsScreen() {
                           <Text className="mt-1 text-xs text-gray-400">点击数字复制</Text>
                         </TouchableOpacity>
                         <View className="h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
-                          <FontAwesome5 name="hashtag" size={18} color="#c084fc" />
+                          <Hash size={18} color="#c084fc" />
                         </View>
                       </View>
 
@@ -121,12 +120,9 @@ export function SettingsScreen() {
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
                           className="flex-row items-center justify-center rounded-xl py-4">
-                          <FontAwesome5 name="qq" size={22} color="white" />
+                          <MessageCircle size={22} color="white" />
                           <Text className="ml-3 text-lg font-bold text-white">立即加入</Text>
                         </LinearGradient>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={checkExpoUpdate}>
-                        <Text>检查更新</Text>
                       </TouchableOpacity>
                     </View>
                   </LinearGradient>

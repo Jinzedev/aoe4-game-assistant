@@ -5,12 +5,11 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { ArrowLeft, AlertTriangle, Info, FileText } from 'lucide-react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StatusBar } from 'expo-status-bar'; // ✅ 1. 新增引入
+import { StatusBar } from 'expo-status-bar';
 
 import ApiService from '../services/apiService';
 import { getMapInfo, getChineseMapName } from '../services/mapImages';
@@ -49,7 +48,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
       setGameSummary(data);
     } catch (error) {
       console.log('⚠️ 无法获取游戏详细统计数据 (可能是旧数据或API限制):', error instanceof Error ? error.message : error);
-      
+
       // 可选：如果需要，可以在这里设置一个空状态，防止 UI 崩溃
       setGameSummary(null);
     } finally {
@@ -67,9 +66,9 @@ export function GameDetailScreen({ route, navigation }: Props) {
   return (
     <SafeAreaProvider>
       {/* ✅ 2. 设置状态栏样式：style="light" 表示白色文字，backgroundColor 设为深色(Android) */}
-      <StatusBar style="light"  />
-      
-      <SafeAreaView 
+      <StatusBar style="light" />
+
+      <SafeAreaView
         style={{ flex: 1, backgroundColor: '#0f172a' }} // ✅ 3. 确保安全区域背景也是深色
         edges={['top']}
       >
@@ -79,7 +78,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               className="flex-row items-center rounded-full bg-white/10 px-4 py-2">
-              <FontAwesome5 name="arrow-left" size={16} color="white" />
+              <ArrowLeft size={16} color="white" />
               <Text className="ml-2 font-medium text-white">返回</Text>
             </TouchableOpacity>
             <Text className="text-lg font-bold text-white">游戏详情</Text>
@@ -94,7 +93,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
               </View>
             ) : !gameBasicInfo ? (
               <View className="items-center rounded-3xl bg-white/95 p-8">
-                <FontAwesome5 name="exclamation-triangle" size={32} color="#ef4444" />
+                <AlertTriangle size={32} color="#ef4444" />
                 <Text className="mt-4 text-center text-base text-gray-600">无法加载游戏信息</Text>
               </View>
             ) : (
@@ -112,7 +111,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
                   if (allPlayers.length < 2) {
                     return (
                       <View className="items-center rounded-3xl bg-white/95 p-8">
-                        <FontAwesome5 name="info-circle" size={32} color="#6b7280" />
+                        <Info size={32} color="#6b7280" />
                         <Text className="mt-4 text-center text-base text-gray-600">
                           游戏数据不完整
                         </Text>
@@ -130,7 +129,7 @@ export function GameDetailScreen({ route, navigation }: Props) {
                   if (!currentPlayer || !opponent) {
                     return (
                       <View className="items-center rounded-3xl bg-white/95 p-8">
-                        <FontAwesome5 name="info-circle" size={32} color="#6b7280" />
+                        <Info size={32} color="#6b7280" />
                         <Text className="mt-4 text-center text-base text-gray-600">
                           无法找到玩家信息
                         </Text>
@@ -224,30 +223,30 @@ export function GameDetailScreen({ route, navigation }: Props) {
                         isWin={isWin}
                         isInvalidGame={isInvalidGame}
                       />
-                      
+
                       {summaryLoading ? (
                         <View className="items-center py-8">
                           <ActivityIndicator size="small" color="#8b5cf6" />
                           <Text className="mt-2 text-xs text-gray-500">加载详细统计...</Text>
                         </View>
-                      ) : 
-                      gameSummary?.players && gameSummary.players.length > 0 ? (
-                        <StatComparisonCard
-                          players={gameSummary.players}
-                          currentProfileId={profileId}
-                        />
-                      ) : (
-                        // 3. 数据为空 (404 或其他原因) -> 显示提示信息
-                        <View className="mt-4 mx-1 items-center justify-center rounded-2xl bg-white/5 border border-white/10 py-8 px-4">
-                          <View className="h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
-                            <FontAwesome5 name="file-invoice-dollar" size={20} color="#64748b" />
+                      ) :
+                        gameSummary?.players && gameSummary.players.length > 0 ? (
+                          <StatComparisonCard
+                            players={gameSummary.players}
+                            currentProfileId={profileId}
+                          />
+                        ) : (
+                          // 3. 数据为空 (404 或其他原因) -> 显示提示信息
+                          <View className="mt-4 mx-1 items-center justify-center rounded-2xl bg-white/5 border border-white/10 py-8 px-4">
+                            <View className="h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
+                              <FileText size={20} color="#64748b" />
+                            </View>
+                            <Text className="text-sm font-bold text-slate-400">暂无详细数据</Text>
+                            <Text className="mt-1 text-center text-xs text-slate-500">
+                              官方未提供本场对局的详细经济/军事统计
+                            </Text>
                           </View>
-                          <Text className="text-sm font-bold text-slate-400">暂无详细数据</Text>
-                          <Text className="mt-1 text-center text-xs text-slate-500">
-                            官方未提供本场对局的详细经济/军事统计
-                          </Text>
-                        </View>
-                      )}
+                        )}
                       <View className="h-8" />
                     </ScrollView>
                   );

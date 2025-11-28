@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { User, Clock, ChevronRight, Search, X, UserX } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,7 +14,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function SearchScreen() {
   const navigation = useNavigation<NavigationProp>();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchResult[]>([]);
@@ -44,7 +44,7 @@ export function SearchScreen() {
           page: 1,
           count: 10
         });
-        
+
         if (leaderboardData.players && leaderboardData.players.length > 0) {
           const results: SearchResult[] = leaderboardData.players.map((player: any) => ({
             profile_id: player.profile_id,
@@ -56,7 +56,7 @@ export function SearchScreen() {
             },
             last_game_at: player.last_game_at
           }));
-          
+
           setHotPlayers(results);
         }
       } catch (error) {
@@ -69,10 +69,10 @@ export function SearchScreen() {
   // 搜索玩家
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
     setIsLoading(true);
     setHasSearched(true);
-    
+
     try {
       const results = await apiService.searchPlayers({ query: searchQuery.trim() });
       const searchResults: SearchResult[] = results.players.map(player => ({
@@ -103,11 +103,11 @@ export function SearchScreen() {
     } catch (error) {
       console.error('❌ 保存搜索历史失败:', error);
     }
-    
+
     // 导航到历史记录页面查看该玩家的对局
-    navigation.navigate('MainTabs', { 
-        screen: 'History',
-        params: { targetPlayer: player }
+    navigation.navigate('MainTabs', {
+      screen: 'History',
+      params: { targetPlayer: player }
     });
   };
 
@@ -135,7 +135,7 @@ export function SearchScreen() {
 
   const PlayerCard = ({ player }: { player: SearchResult }) => {
     const rmSoloData = player.leaderboards?.rm_solo;
-    
+
     return (
       <TouchableOpacity
         onPress={() => handlePlayerSelect(player)}
@@ -144,17 +144,17 @@ export function SearchScreen() {
         <View className="flex-row items-center">
           <View className="w-14 h-14 rounded-xl mr-3 overflow-hidden bg-gray-200 relative">
             {player.avatars?.medium ? (
-              <Image 
-                source={{ uri: player.avatars.medium }} 
+              <Image
+                source={{ uri: player.avatars.medium }}
                 className="w-full h-full"
                 style={{ resizeMode: 'cover' }}
               />
             ) : (
               <View className="w-full h-full items-center justify-center bg-purple-100">
-                <FontAwesome5 name="user" size={18} color="#7c3aed" />
+                <User size={18} color="#7c3aed" />
               </View>
             )}
-            
+
             {player.country && (
               <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-gray-800 rounded-full items-center justify-center border border-white/20">
                 <Text className="text-xs">
@@ -163,14 +163,14 @@ export function SearchScreen() {
               </View>
             )}
           </View>
-          
+
           <View className="flex-1">
             <View className="flex-row items-center mb-1">
               <Text className="font-bold text-gray-800 text-base" numberOfLines={1}>
                 {player.name}
               </Text>
             </View>
-            
+
             {rmSoloData && (
               <View className="flex-row items-center mb-1">
                 <Text className="text-purple-600 font-semibold text-sm mr-2">
@@ -188,7 +188,7 @@ export function SearchScreen() {
                 )}
               </View>
             )}
-            
+
             {rmSoloData && (
               <View className="flex-row items-center mb-1">
                 {rmSoloData.rank && (
@@ -208,16 +208,16 @@ export function SearchScreen() {
                 </Text>
               </View>
             )}
-            
+
             <View className="flex-row items-center">
-              <FontAwesome5 name="clock" size={10} color="#9ca3af" />
+              <Clock size={10} color="#9ca3af" />
               <Text className="text-gray-400 text-xs ml-1">
                 {formatLastGameTime(rmSoloData?.last_game_at || player.last_game_at)}
               </Text>
             </View>
           </View>
-          
-          <FontAwesome5 name="chevron-right" size={12} color="#9ca3af" style={{ marginLeft: 8 }} />
+
+          <ChevronRight size={12} color="#9ca3af" style={{ marginLeft: 8 }} />
         </View>
       </TouchableOpacity>
     );
@@ -235,7 +235,7 @@ export function SearchScreen() {
 
         <View className="px-6 pb-4">
           <View className="bg-white/10 rounded-2xl p-4 flex-row items-center">
-            <FontAwesome5 name="search" size={16} color="white" />
+            <Search size={16} color="white" />
             <TextInput
               className="flex-1 ml-3 text-white text-base"
               placeholder="输入玩家名称..."
@@ -247,11 +247,11 @@ export function SearchScreen() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <FontAwesome5 name="times" size={14} color="rgba(255,255,255,0.6)" />
+                <X size={14} color="rgba(255,255,255,0.6)" />
               </TouchableOpacity>
             )}
           </View>
-          
+
           {searchQuery.trim().length > 0 && (
             <TouchableOpacity
               onPress={handleSearch}
@@ -270,7 +270,7 @@ export function SearchScreen() {
               <Text className="text-lg font-bold text-gray-800 mb-4">
                 搜索结果 {searchResults.length > 0 && `(${searchResults.length})`}
               </Text>
-              
+
               {isLoading ? (
                 <View className="space-y-3">
                   {[1, 2, 3].map((index) => (
@@ -293,7 +293,7 @@ export function SearchScreen() {
                 </View>
               ) : (
                 <View className="py-8 items-center">
-                  <FontAwesome5 name="search" size={32} color="#9ca3af" />
+                  <Search size={32} color="#9ca3af" />
                   <Text className="text-gray-500 text-center mt-3">
                     未找到玩家 "{searchQuery}"
                   </Text>
@@ -313,7 +313,7 @@ export function SearchScreen() {
                   <Text className="text-gray-500 text-sm">清除</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <View>
                 {searchHistory.map((player) => (
                   <PlayerCard key={player.profile_id} player={player} />
@@ -330,7 +330,7 @@ export function SearchScreen() {
               <Text className="text-gray-500 text-sm mb-4">
                 当前1v1排位赛排名
               </Text>
-              
+
               <View>
                 {hotPlayers.map((player) => (
                   <PlayerCard key={player.profile_id} player={player} />
@@ -341,7 +341,7 @@ export function SearchScreen() {
 
           {!hasSearched && searchHistory.length === 0 && hotPlayers.length === 0 && (
             <View className="bg-white/95 rounded-3xl p-6 items-center">
-              <FontAwesome5 name="search" size={48} color="#9ca3af" />
+              <Search size={48} color="#9ca3af" />
               <Text className="text-gray-500 text-center mt-4 text-lg font-medium">
                 开始搜索玩家
               </Text>
