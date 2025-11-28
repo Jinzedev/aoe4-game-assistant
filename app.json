@@ -6,16 +6,11 @@
     "web": {
       "favicon": "./assets/aoe4.png"
     },
-    "updates": {
-      "url": "https://aoe4update.jinze.xyz",
-      "fallbackToCacheTimeout": 0
-    },
     "experiments": {
       "tsconfigPaths": true
     },
     "plugins": [
-      "expo-asset",
-      "expo-font"
+      "expo-asset"
     ],
     "orientation": "portrait",
     "icon": "./assets/aoe4.png",
