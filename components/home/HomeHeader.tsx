@@ -101,10 +101,17 @@ export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onU
         </View>
         <View className="flex-row">
           <View className="bg-white/10 rounded-2xl p-4 flex-1 mr-2">
-            <Text className="text-2xl font-bold text-white mb-1 text-center">{currentModeEntry ? `${currentModeEntry!.win_rate.toFixed(1)}%` : '--'}</Text>
+            <Text className="text-2xl font-bold text-white mb-1 text-center">
+              {currentModeEntry?.win_rate !== undefined
+                ? `${currentModeEntry.win_rate.toFixed(1)}%`
+                : '--'}
+            </Text>
             <Text className="text-white/60 text-xs text-center">总胜率</Text>
             <View className="w-full bg-white/20 rounded-full h-1 mt-2">
-              <View className="bg-emerald-500 h-1 rounded-full" style={{ width: currentModeEntry ? `${currentModeEntry!.win_rate}%` : '0%' }} />
+              <View
+                className="bg-emerald-500 h-1 rounded-full"
+                style={{ width: currentModeEntry?.win_rate !== undefined ? `${currentModeEntry.win_rate}%` : '0%' }}
+              />
             </View>
           </View>
           <View className="bg-white/10 rounded-2xl p-4 flex-1 mx-2">
