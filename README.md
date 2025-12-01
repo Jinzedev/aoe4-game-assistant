@@ -132,6 +132,7 @@ my-expo-app/
 
 4.  **构建 Release 包 (Android)**
     ```bash
+    npx expo prebuild --clean --platform android
     npx expo run:android --variant release
     ```
 
