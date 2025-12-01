@@ -211,7 +211,7 @@ class ApiService {
   private async request<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     try {
       const url = new URL(`${this.baseURL}${endpoint}`);
-      
+
       if (params) {
         Object.keys(params).forEach(key => {
           if (params[key] !== undefined && params[key] !== null) {
@@ -219,12 +219,12 @@ class ApiService {
           }
         });
       }
-      
+
       // 在终端显示请求信息
       console.log(`🚀 [API请求] 路径: ${endpoint}`);
       console.log(`📋 [API请求] 参数:`, params || '无参数');
       console.log(`🔗 [API请求] 完整URL: ${url.toString()}`);
-      
+
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
@@ -249,7 +249,7 @@ class ApiService {
   }
 
   // ========== 玩家相关 API ==========
-  
+
   // 获取玩家详细信息
   async getPlayer(profileId: number): Promise<Player> {
     return this.request<Player>(`/players/${profileId}`);
@@ -289,22 +289,22 @@ class ApiService {
   }
 
   // ========== 排行榜 API ==========
-  
+
   // 获取排行榜
   async getLeaderboard(params: LeaderboardParams): Promise<{ players: LeaderboardEntry[], count: number }> {
     return this.request(`/leaderboards/${params.leaderboard}`, params);
   }
 
   // ========== 游戏相关 API ==========
-  
+
   // ========== 统计数据 API ==========
-  
+
   // 获取文明统计数据
   async getCivilizationStats(leaderboard: string, patch?: string, rating?: string): Promise<StatsResponse> {
     const params: any = {};
     if (patch) params.patch = patch;
     if (rating) params.rating = rating;
-    
+
     return this.request<StatsResponse>(`/stats/${leaderboard}/civilizations`, params);
   }
 
@@ -313,7 +313,7 @@ class ApiService {
     const params: any = {};
     if (patch) params.patch = patch;
     if (rating) params.rating = rating;
-    
+
     return this.request<MapStatsResponse>(`/stats/${leaderboard}/maps`, params);
   }
 
@@ -322,7 +322,7 @@ class ApiService {
     const params: any = {};
     if (patch) params.patch = patch;
     if (rating) params.rating = rating;
-    
+
     return this.request<MapCivilizationStatsResponse>(`/stats/${leaderboard}/maps/${mapId}`, params);
   }
 
@@ -331,7 +331,7 @@ class ApiService {
     const params: any = {};
     if (patch) params.patch = patch;
     if (rating) params.rating = rating;
-    
+
     return this.request(`/stats/${leaderboard}/teams`, params);
   }
 
@@ -340,27 +340,63 @@ class ApiService {
     try {
       // 先尝试不带sig参数的情况
       const url = `https://aoe4world.com/players/${profileId}/games/${gameId}/summary?camelize=true`;
-    
+
       // 在终端显示请求信息
       console.log(`🚀 [游戏分析] 路径: /players/${profileId}/games/${gameId}/summary`);
       console.log(`📋 [游戏分析] 参数: camelize=true`);
       console.log(`🔗 [游戏分析] 完整URL: ${url}`);
-      
+
       const response = await fetch(url);
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.log('❌ [游戏分析] 请求失败:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log(`✅ [游戏分析] 响应状态: ${response.status}`);
-      
+
       return data;
     } catch (error) {
       console.log('💥 [游戏分析] 获取失败:', error);
-      
+
+    }
+  }
+  // 获取平均APM (通过获取最近几场游戏的详细数据计算)
+  async getAverageApm(profileId: number, count: number = 10): Promise<number | null> {
+    try {
+      // 1. 获取最近的游戏列表
+      const { games } = await this.getPlayerGames(profileId, { limit: count });
+
+      if (!games || games.length === 0) return null;
+
+      // 2. 并行获取每场游戏的详细数据
+      const promises = games.map(game => this.getGameSummary(profileId, game.game_id));
+      const summaries = await Promise.all(promises);
+
+      // 3. 提取APM并计算平均值
+      let totalApm = 0;
+      let validCount = 0;
+
+      summaries.forEach(summary => {
+        if (!summary || !summary.players) return;
+
+        // 在summary.players中找到当前玩家
+        const player = summary.players.find((p: any) => p.profileId === profileId || p.profile_id === profileId);
+
+        if (player && player.apm && player.apm > 0) {
+          totalApm += player.apm;
+          validCount++;
+        }
+      });
+
+      if (validCount === 0) return null;
+
+      return Math.round(totalApm / validCount);
+    } catch (error) {
+      console.error('Failed to calculate average APM:', error);
+      return null;
     }
   }
 }
@@ -458,53 +494,53 @@ export const formatTier = (tier: string): string => {
 // 格式化段位等级
 export const formatRankLevel = (rankLevel: string): string => {
   if (!rankLevel) return '未排名';
-  
+
   const rankMap: Record<string, string> = {
     // 未排名状态
     'unranked': '未排名',
-    
+
     // 青铜段位
     'bronze_1': '青铜1',
     'bronze_2': '青铜2',
     'bronze_3': '青铜3',
-    
+
     // 白银段位
     'silver_1': '白银1',
     'silver_2': '白银2',
     'silver_3': '白银3',
-    
+
     // 黄金段位
     'gold_1': '黄金1',
     'gold_2': '黄金2',
     'gold_3': '黄金3',
-    
+
     // 铂金段位
     'platinum_1': '铂金1',
     'platinum_2': '铂金2',
     'platinum_3': '铂金3',
-    
+
     // 钻石段位
     'diamond_1': '钻石1',
     'diamond_2': '钻石2',
     'diamond_3': '钻石3',
-    
+
     // 征服者段位
     'conqueror_1': '征服者1',
     'conqueror_2': '征服者2',
     'conqueror_3': '征服者3',
     'conqueror_4': '征服者4'
   };
-  
+
   return rankMap[rankLevel] || rankLevel;
 };
 
 // 根据段位等级获取对应图标
 export const getRankIcon = (rankLevel: string): string => {
   if (!rankLevel) return '❓';
-  
+
   // 提取段位类型（去掉数字部分）
   const rankType = rankLevel.split('_')[0];
-  
+
   const iconMap: Record<string, string> = {
     'bronze': '🟤',      // 青铜 - 棕色圆圈
     'silver': '⚪',      // 白银 - 白色圆圈  
@@ -514,7 +550,7 @@ export const getRankIcon = (rankLevel: string): string => {
     'conqueror': '👑',   // 征服者 - 皇冠
     'unranked': '❓'     // 未排名 - 问号
   };
-  
+
   return iconMap[rankType] || '❓';
 };
 
@@ -551,18 +587,18 @@ export const calculateMonthlyStats = (games: Game[], playerId?: number): Monthly
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
-  
+
   // 本月第一天
   const monthStart = new Date(currentYear, currentMonth, 1);
-  
+
   // 筛选本月的游戏
   const monthlyGames = games.filter(game => {
     const gameDate = new Date(game.started_at);
     return gameDate >= monthStart;
   });
-  
-      console.log(`📊 [月度统计] 总共${games.length}场游戏，本月${monthlyGames.length}场`);
-  
+
+  console.log(`📊 [月度统计] 总共${games.length}场游戏，本月${monthlyGames.length}场`);
+
   if (monthlyGames.length === 0) {
     return {
       totalGames: 0,
@@ -573,21 +609,21 @@ export const calculateMonthlyStats = (games: Game[], playerId?: number): Monthly
       teamRankChange: null
     };
   }
-  
+
   // 计算胜负
   let wins = 0;
   let losses = 0;
   let validGames = 0; // 有效游戏计数
-  
+
   monthlyGames.forEach((game, index) => {
     // 验证游戏数据结构
     if (!game.teams || !Array.isArray(game.teams)) {
       return;
     }
-    
+
     // 找到玩家所在的队伍（修正数据结构）
     let playerResult: string | null = null;
-    
+
     // API返回的teams是二维数组，每个team是一个数组，包含玩家对象
     for (const team of game.teams) {
       if (Array.isArray(team)) {
@@ -600,7 +636,7 @@ export const calculateMonthlyStats = (games: Game[], playerId?: number): Monthly
       }
       if (playerResult) break;
     }
-    
+
     // 统计有效的游戏结果
     if (playerResult === 'win') {
       wins++;
@@ -611,12 +647,12 @@ export const calculateMonthlyStats = (games: Game[], playerId?: number): Monthly
     }
     // 忽略result为null的游戏（通常是正在进行或异常的游戏）
   });
-  
+
   const totalGames = validGames; // 使用有效游戏数量
   const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
-  
+
   console.log(`📊 [月度结果] ${wins}胜${losses}负，总计${totalGames}场有效游戏，胜率${winRate.toFixed(1)}%`);
-  
+
   return {
     totalGames,
     wins,
@@ -630,10 +666,10 @@ export const calculateMonthlyStats = (games: Game[], playerId?: number): Monthly
 // 获取国旗emoji
 export const getCountryFlag = (countryCode: string): string => {
   if (!countryCode) return '🌍';
-  
+
   // 转换为大写以确保匹配
   const upperCode = countryCode.toUpperCase();
-  
+
   const flagMap: Record<string, string> = {
     'CN': '🇨🇳', // 中国
     'US': '🇺🇸', // 美国
@@ -678,6 +714,6 @@ export const getCountryFlag = (countryCode: string): string => {
     'SA': '🇸🇦', // 沙特阿拉伯
     'UA': '🇺🇦', // 乌克兰
   };
-  
+
   return flagMap[upperCode] || '🌍';
 }; 

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { LogOut, User } from 'lucide-react-native';
 import { SearchResult } from '../../types';
 // 导入所有需要的工具函数
-import { formatRankLevel, getRankIcon, getCountryFlag } from '../../services/apiService';
+import { formatRankLevel, getRankIcon, getCountryFlag, default as apiService } from '../../services/apiService';
 // 假设 PlayerAvatar 和 SkeletonLoader 位于 components 目录下
 import { PlayerAvatar } from '../PlayerAvatar';
 import { SkeletonLoader } from '../SkeletonLoader';
@@ -27,6 +27,18 @@ const getCurrentModeEntry = (data: SearchResult | undefined, mode: LeaderboardMo
 
 
 export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onUnbind, showSkeleton }: HomeHeaderProps) {
+  const [averageApm, setAverageApm] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchApm = async () => {
+      if (boundPlayerData?.profile_id) {
+        setAverageApm(null); // Reset on change
+        const apm = await apiService.getAverageApm(boundPlayerData.profile_id);
+        setAverageApm(apm);
+      }
+    };
+    fetchApm();
+  }, [boundPlayerData?.profile_id]);
 
   if (showSkeleton) {
     // 渲染骨架屏，注意：未绑定账户的提示卡片仍然留在 HomeScreen 的 ScrollView 中
@@ -99,28 +111,38 @@ export function HomeHeader({ boundPlayerData, selectedMode, setSelectedMode, onU
             </View>
           </View>
         </View>
-        <View className="flex-row">
-          <View className="bg-white/10 rounded-2xl p-4 flex-1 mr-2">
-            <Text className="text-2xl font-bold text-white mb-1 text-center">
-              {currentModeEntry?.win_rate !== undefined
-                ? `${currentModeEntry.win_rate.toFixed(1)}%`
-                : '--'}
-            </Text>
-            <Text className="text-white/60 text-xs text-center">总胜率</Text>
-            <View className="w-full bg-white/20 rounded-full h-1 mt-2">
-              <View
-                className="bg-emerald-500 h-1 rounded-full"
-                style={{ width: currentModeEntry?.win_rate !== undefined ? `${currentModeEntry.win_rate}%` : '0%' }}
-              />
+
+        {/* Stats Grid - 2x2 Layout */}
+        <View>
+          <View className="flex-row mb-2">
+            <View className="bg-white/10 rounded-2xl p-4 flex-1 mr-1">
+              <Text className="text-2xl font-bold text-white mb-1 text-center">
+                {currentModeEntry?.win_rate !== undefined
+                  ? `${currentModeEntry.win_rate.toFixed(1)}%`
+                  : '--'}
+              </Text>
+              <Text className="text-white/60 text-xs text-center">总胜率</Text>
+              <View className="w-full bg-white/20 rounded-full h-1 mt-2">
+                <View
+                  className="bg-emerald-500 h-1 rounded-full"
+                  style={{ width: currentModeEntry?.win_rate !== undefined ? `${currentModeEntry.win_rate}%` : '0%' }}
+                />
+              </View>
+            </View>
+            <View className="bg-white/10 rounded-2xl p-4 flex-1 ml-1">
+              <Text className="text-2xl font-bold text-white mb-1 text-center">{currentModeEntry?.games_count || '--'}</Text>
+              <Text className="text-white/60 text-xs text-center">总场次</Text>
             </View>
           </View>
-          <View className="bg-white/10 rounded-2xl p-4 flex-1 mx-2">
-            <Text className="text-2xl font-bold text-white mb-1 text-center">{currentModeEntry?.games_count || '--'}</Text>
-            <Text className="text-white/60 text-xs text-center">总场次</Text>
-          </View>
-          <View className="bg-white/10 rounded-2xl p-4 flex-1 ml-2">
-            <Text className="text-2xl font-bold text-white mb-1 text-center">{currentModeEntry?.rating || '--'}</Text>
-            <Text className="text-white/60 text-xs text-center">ELO分数</Text>
+          <View className="flex-row">
+            <View className="bg-white/10 rounded-2xl p-4 flex-1 mr-1">
+              <Text className="text-2xl font-bold text-white mb-1 text-center">{currentModeEntry?.rating || '--'}</Text>
+              <Text className="text-white/60 text-xs text-center">ELO分数</Text>
+            </View>
+            <View className="bg-white/10 rounded-2xl p-4 flex-1 ml-1">
+              <Text className="text-2xl font-bold text-white mb-1 text-center">{averageApm || '--'}</Text>
+              <Text className="text-white/60 text-xs text-center">平均APM</Text>
+            </View>
           </View>
         </View>
       </View>
